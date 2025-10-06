@@ -32,6 +32,36 @@ def test_inspect_from_fixture_loads_sample_fixture() -> None:
     )
 
 
+def test_inspect_from_fixture_loads_single_movie_fixture() -> None:
+    disc = inspect_from_fixture("single_movie_disc")
+
+    assert disc.label == "Single Movie Feature"
+    assert len(disc.titles) == 3
+
+    main_feature, deleted_scenes, trailer = disc.titles
+
+    assert main_feature.label == "Main Feature"
+    assert main_feature.duration == timedelta(hours=1, minutes=52, seconds=30)
+    assert main_feature.chapters == (
+        timedelta(minutes=25),
+        timedelta(minutes=23, seconds=30),
+        timedelta(minutes=24, seconds=15),
+        timedelta(minutes=39, seconds=45),
+    )
+
+    assert deleted_scenes.label == "Deleted Scenes"
+    assert deleted_scenes.duration == timedelta(minutes=15)
+    assert deleted_scenes.chapters == (
+        timedelta(minutes=5),
+        timedelta(minutes=5),
+        timedelta(minutes=5),
+    )
+
+    assert trailer.label == "Theatrical Trailer"
+    assert trailer.duration == timedelta(minutes=2, seconds=30)
+    assert trailer.chapters == ()
+
+
 def test_inspect_from_fixture_accepts_custom_directory(tmp_path: Path) -> None:
     fixture_path = tmp_path / "custom.json"
     fixture_path.write_text(

@@ -68,7 +68,7 @@
 - [x] Centralize exceptions → user-friendly messages (no raw tracebacks by default) [#P7-T6]
 
 ## Phase 8 – Tests & Fixtures
-- [ ] Add fixtures: single-movie disc JSON (titles + durations) (file present) [#P8-T1]
+- [x] Add fixtures: single-movie disc JSON (titles + durations) (file present) [#P8-T1]
 - [ ] Add fixtures: multi-episode disc JSON (6 episodes) (file present) [#P8-T2]
 - [ ] Add fixtures: ambiguous structure JSON (borderline durations) (file present) [#P8-T3]
 - [ ] Tests: config precedence (defaults/config/CLI) (pytest passes) [#P8-T4]
