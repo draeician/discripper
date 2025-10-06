@@ -76,7 +76,7 @@
 - [x] Tests: naming sanitization & lowercase options (pass) [#P8-T6]
 - [x] Tests: dry-run planning prints expected actions (pass) [#P8-T7]
 - [x] Tests: exit code mapping for common failures (pass) [#P8-T8]
-- [ ] Coverage gate ≥ 80% (report shows ≥80%) [#P8-T9]
+- [x] Coverage gate ≥ 80% (report shows ≥80%) [#P8-T9]
 
 ## Phase 9 – Packaging & Install
 - [ ] Finalize `pyproject.toml` metadata (name, version, classifiers) (builds sdist/wheel) [#P9-T1]
