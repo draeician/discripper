@@ -85,6 +85,28 @@ def test_resolve_cli_config_sets_dry_run_flag(tmp_path) -> None:
     assert resolved["dry_run"] is True
 
 
+def test_resolve_cli_config_applies_precedence(tmp_path) -> None:
+    """Defaults are overridden by config file, which in turn yields to CLI flags."""
+
+    config_path = _write_config(
+        tmp_path,
+        {
+            "output_directory": "/mnt/custom",
+            "logging": {"level": "WARNING"},
+            "dry_run": False,
+        },
+    )
+
+    args = cli.parse_arguments(
+        ["--config", str(config_path), "--verbose", "--dry-run"]
+    )
+    resolved = cli.resolve_cli_config(args)
+
+    assert resolved["output_directory"] == "/mnt/custom"
+    assert resolved["logging"]["level"] == "DEBUG"
+    assert resolved["dry_run"] is True
+
+
 def test_cli_help_mentions_device_default() -> None:
     """The help output mentions the default device path."""
 
