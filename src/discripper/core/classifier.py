@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import timedelta
 from typing import TYPE_CHECKING, Literal, Sequence, Tuple
@@ -20,24 +21,36 @@ class ClassificationResult:
     episodes: Tuple[TitleInfo, ...]
 
 
-_MOVIE_MAIN_TITLE_THRESHOLD = timedelta(minutes=60)
-_MOVIE_TOTAL_RUNTIME_LIMIT = timedelta(hours=3)
-_SERIES_MIN_DURATION = timedelta(minutes=20)
-_SERIES_MAX_DURATION = timedelta(minutes=60)
-_SERIES_GAP_LIMIT = 0.2  # 20% variation allowed between episode runtimes
+@dataclass(frozen=True, slots=True)
+class ClassificationThresholds:
+    """Configurable thresholds that steer the classification heuristics."""
+
+    movie_main_title: timedelta = timedelta(minutes=60)
+    movie_total_runtime: timedelta = timedelta(hours=3)
+    series_min_duration: timedelta = timedelta(minutes=20)
+    series_max_duration: timedelta = timedelta(minutes=60)
+    series_gap_limit: float = 0.2
 
 
-def classify_disc(disc: DiscInfo) -> ClassificationResult:
+DEFAULT_THRESHOLDS = ClassificationThresholds()
+
+
+def classify_disc(
+    disc: DiscInfo, *, thresholds: ClassificationThresholds | None = None
+) -> ClassificationResult:
     """Classify *disc* according to PRD heuristics.
 
     The function returns the inferred :class:`ClassificationResult`.
     """
 
+    active_thresholds = thresholds or DEFAULT_THRESHOLDS
     titles = list(disc.titles)
     if not titles:
         return ClassificationResult("movie", ())
 
-    episode_candidates = _series_candidates(list(enumerate(titles)))
+    episode_candidates = _series_candidates(
+        list(enumerate(titles)), active_thresholds
+    )
     if episode_candidates:
         ordered = tuple(title for _, title in episode_candidates)
         return ClassificationResult("series", ordered)
@@ -47,7 +60,7 @@ def classify_disc(disc: DiscInfo) -> ClassificationResult:
     longest_title = titles[longest_index]
     total_runtime = sum(durations)
 
-    if _is_movie_candidate(longest_title, durations, total_runtime):
+    if _is_movie_candidate(longest_title, durations, total_runtime, active_thresholds):
         return ClassificationResult("movie", (longest_title,))
 
     return ClassificationResult("movie", (longest_title,))
@@ -57,12 +70,13 @@ def _is_movie_candidate(
     longest_title: TitleInfo,
     durations: Sequence[float],
     total_runtime: float,
+    thresholds: ClassificationThresholds,
 ) -> bool:
     longest_duration = longest_title.duration
-    if longest_duration <= _MOVIE_MAIN_TITLE_THRESHOLD:
+    if longest_duration <= thresholds.movie_main_title:
         return False
 
-    if total_runtime > _MOVIE_TOTAL_RUNTIME_LIMIT.total_seconds():
+    if total_runtime > thresholds.movie_total_runtime.total_seconds():
         return False
 
     longest_seconds = longest_duration.total_seconds()
@@ -74,11 +88,14 @@ def _is_movie_candidate(
 
 def _series_candidates(
     indexed_titles: Sequence[tuple[int, TitleInfo]],
+    thresholds: ClassificationThresholds,
 ) -> Tuple[tuple[int, TitleInfo], ...]:
     filtered = [
         (index, title)
         for index, title in indexed_titles
-        if _SERIES_MIN_DURATION <= title.duration <= _SERIES_MAX_DURATION
+        if thresholds.series_min_duration
+        <= title.duration
+        <= thresholds.series_max_duration
     ]
     if len(filtered) < 2:
         return ()
@@ -89,7 +106,62 @@ def _series_candidates(
         return ()
 
     max_gap = max(abs(duration - average) / average for duration in seconds)
-    if max_gap > _SERIES_GAP_LIMIT:
+    if max_gap > thresholds.series_gap_limit:
         return ()
 
     return tuple(sorted(filtered, key=lambda item: (item[1].duration, item[0])))
+
+
+def thresholds_from_config(
+    config: Mapping[str, object]
+) -> ClassificationThresholds:
+    """Return :class:`ClassificationThresholds` derived from *config* mapping."""
+
+    classification_section = config.get("classification")
+    if not isinstance(classification_section, Mapping):
+        return DEFAULT_THRESHOLDS
+
+    defaults = DEFAULT_THRESHOLDS
+
+    def _duration_from_minutes(value: object, default: timedelta) -> timedelta:
+        if isinstance(value, (int, float)) and value > 0:
+            return timedelta(minutes=float(value))
+        return default
+
+    def _ratio(value: object, default: float) -> float:
+        if isinstance(value, (int, float)) and value >= 0:
+            return float(value)
+        return default
+
+    movie_main = _duration_from_minutes(
+        classification_section.get("movie_main_title_minutes"),
+        defaults.movie_main_title,
+    )
+    movie_total_runtime = _duration_from_minutes(
+        classification_section.get("movie_total_runtime_minutes"),
+        defaults.movie_total_runtime,
+    )
+    series_min = _duration_from_minutes(
+        classification_section.get("series_min_duration_minutes"),
+        defaults.series_min_duration,
+    )
+    series_max = _duration_from_minutes(
+        classification_section.get("series_max_duration_minutes"),
+        defaults.series_max_duration,
+    )
+    gap_limit = _ratio(
+        classification_section.get("series_gap_limit"), defaults.series_gap_limit
+    )
+
+    derived = ClassificationThresholds(
+        movie_main_title=movie_main,
+        movie_total_runtime=movie_total_runtime,
+        series_min_duration=series_min,
+        series_max_duration=series_max,
+        series_gap_limit=gap_limit,
+    )
+
+    if derived == defaults:
+        return defaults
+
+    return derived
