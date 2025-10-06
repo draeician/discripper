@@ -23,7 +23,7 @@ from .discovery import (
 from .dvd import inspect_dvd
 from .fake import inspect_from_fixture
 from .ffprobe import inspect_with_ffprobe
-from .naming import sanitize_component
+from .naming import movie_output_path, sanitize_component
 from .rip import RipExecutionError, RipPlan, rip_disc, rip_title, run_rip_plan
 
 __all__ = [
@@ -44,6 +44,7 @@ __all__ = [
     "inspect_with_ffprobe",
     "inspect_from_fixture",
     "sanitize_component",
+    "movie_output_path",
     "RipExecutionError",
     "RipPlan",
     "rip_disc",
