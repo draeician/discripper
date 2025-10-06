@@ -11,7 +11,7 @@
 - [x] Initialize Python project (PEP 621 `pyproject.toml`, `src/` layout, tests/) (repo builds locally) [#P1-T1]
 - [x] Add console entry point for `{ENTRYPOINT}` in `pyproject.toml` (entry shows in `pip install -e .`) [#P1-T2]
 - [x] Create package skeleton `src/{PROJECT_SLUG}/cli.py` and `src/{PROJECT_SLUG}/core/__init__.py` (imports succeed) [#P1-T3]
-- [ ] Add `.gitignore` for Python, build, and test artifacts (ignored files confirmed) [#P1-T4]
+- [x] Add `.gitignore` for Python, build, and test artifacts (ignored files confirmed) [#P1-T4]
 - [ ] Add `ruff` config and minimal rule-set in `pyproject.toml` (ruff runs clean) [#P1-T5]
 - [ ] Add `pytest` config (`-q`, `pythonpath=src`) (tests discover/run) [#P1-T6]
 - [ ] Add `LICENSE` and minimal top-level `README.md` (files present) [#P1-T7]
