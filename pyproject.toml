@@ -32,5 +32,5 @@ line-length = 100
 select = ["E", "F"]
 
 [tool.pytest.ini_options]
-addopts = "-q"
+addopts = "-q --cov=src --cov-fail-under=80"
 pythonpath = ["src"]
