@@ -82,7 +82,7 @@
 - [x] Finalize `pyproject.toml` metadata (name, version, classifiers) (builds sdist/wheel) [#P9-T1]
 - [x] Confirm `console_scripts` exposes `{ENTRYPOINT}` (invokes CLI after install) [#P9-T2]
 - [x] Makefile: `install`, `lint`, `test`, `format` targets (targets run successfully) [#P9-T3]
-- [ ] Verify `pipx install -e .` and `pip install -e .` (both flows work) [#P9-T4]
+- [x] Verify `pipx install -e .` and `pip install -e .` (both flows work) [#P9-T4]
 
 ## Phase 10 – Docs & Quickstart
 - [ ] Root `README.md`: prerequisites (apt tools), install, usage (movie & series), dry-run (sections present) [#P10-T1]
