@@ -5,8 +5,20 @@ from discripper.core import (
     DiscInfo,
     TitleInfo,
     classify_disc,
+    inspect_from_fixture,
     thresholds_from_config,
 )
+
+
+def test_classify_disc_movie_fixture_selects_longest_title():
+    disc = inspect_from_fixture("sample_disc")
+
+    result = classify_disc(disc)
+
+    assert result.disc_type == "movie"
+    assert result.episodes == (disc.titles[0],)
+    assert result.episode_codes == ()
+    assert result.numbered_episodes == ()
 
 
 def test_classify_disc_movie_selects_longest_title():
