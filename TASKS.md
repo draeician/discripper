@@ -85,7 +85,7 @@
 - [x] Verify `pipx install -e .` and `pip install -e .` (both flows work) [#P9-T4]
 
 ## Phase 10 – Docs & Quickstart
-- [ ] Root `README.md`: prerequisites (apt tools), install, usage (movie & series), dry-run (sections present) [#P10-T1]
+- [x] Root `README.md`: prerequisites (apt tools), install, usage (movie & series), dry-run (sections present) [#P10-T1]
 - [ ] Document config schema and `{CONFIG_PATH}` override (examples provided) [#P10-T2]
 - [ ] Troubleshooting section: common errors & resolutions (page anchors added) [#P10-T3]
 - [ ] CLI `--help` examples included in docs (copy/paste verified) [#P10-T4]
