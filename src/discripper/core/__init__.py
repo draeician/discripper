@@ -23,6 +23,14 @@ from .discovery import (
 from .dvd import inspect_dvd
 from .fake import inspect_from_fixture
 from .ffprobe import inspect_with_ffprobe
+from .metadata import (
+    DEFAULT_METADATA_PROVIDER,
+    DiscMetadata,
+    EpisodeMetadata,
+    MetadataLookupResult,
+    MetadataProvider,
+    NullMetadataProvider,
+)
 from .naming import movie_output_path, sanitize_component, series_output_path
 from .rip import RipExecutionError, RipPlan, rip_disc, rip_title, run_rip_plan
 
@@ -43,6 +51,12 @@ __all__ = [
     "inspect_blu_ray",
     "inspect_with_ffprobe",
     "inspect_from_fixture",
+    "EpisodeMetadata",
+    "DiscMetadata",
+    "MetadataLookupResult",
+    "MetadataProvider",
+    "NullMetadataProvider",
+    "DEFAULT_METADATA_PROVIDER",
     "sanitize_component",
     "movie_output_path",
     "series_output_path",

@@ -98,7 +98,7 @@
 ## Phase 12 – Optional / Deferred Features
 - [x] Post-rip HandBrake hook if `compression=true` (command assembled; disabled by default) [#P12-T1]
 - [x] Configurable episode title inference strategy (pluggable; documented) [#P12-T2]
-- [ ] Metadata lookup (TheTVDB/TMDB) placeholder interface (non-blocking stub) [#P12-T3]
+- [x] Metadata lookup (TheTVDB/TMDB) placeholder interface (non-blocking stub) [#P12-T3]
 
 ## Phase 13 – Final QA & Acceptance
 - [ ] `scripts/acceptance.sh` runs fixtures end-to-end (exit codes & plans verified) [#P13-T1]
