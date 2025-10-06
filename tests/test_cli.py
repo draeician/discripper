@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 import yaml
@@ -90,3 +91,25 @@ def test_cli_help_mentions_device_default() -> None:
     help_text = cli.build_argument_parser().format_help()
 
     assert "/dev/sr0" in help_text
+
+
+def test_main_configures_info_logging_by_default() -> None:
+    """INFO logging is enabled when --verbose is not supplied."""
+
+    logging.basicConfig(level=logging.NOTSET, force=True)
+    try:
+        cli.main([])
+        assert logging.getLogger().getEffectiveLevel() == logging.INFO
+    finally:
+        logging.basicConfig(level=logging.NOTSET, force=True)
+
+
+def test_main_configures_debug_logging_with_verbose() -> None:
+    """DEBUG logging is enabled when --verbose is provided."""
+
+    logging.basicConfig(level=logging.NOTSET, force=True)
+    try:
+        cli.main(["--verbose"])
+        assert logging.getLogger().getEffectiveLevel() == logging.DEBUG
+    finally:
+        logging.basicConfig(level=logging.NOTSET, force=True)

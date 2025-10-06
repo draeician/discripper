@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import logging
 import sys
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 from .config import load_config
 
@@ -50,6 +51,31 @@ def parse_arguments(argv: Sequence[str] | None = None) -> argparse.Namespace:
     return parser.parse_args(argv)
 
 
+def _resolve_log_level(value: object) -> int:
+    """Return the numeric log level for *value* with a safe default."""
+
+    if isinstance(value, int):
+        return value
+
+    if isinstance(value, str):
+        resolved = logging.getLevelName(value.upper())
+        if isinstance(resolved, int):
+            return resolved
+
+    return logging.INFO
+
+
+def configure_logging(config: Mapping[str, Any]) -> None:
+    """Configure the root logger based on the provided *config*."""
+
+    level_value = None
+    logging_config = config.get("logging")
+    if isinstance(logging_config, Mapping):
+        level_value = logging_config.get("level")
+
+    logging.basicConfig(level=_resolve_log_level(level_value), force=True)
+
+
 def resolve_cli_config(args: argparse.Namespace) -> dict[str, Any]:
     """Return the effective configuration after applying CLI overrides."""
 
@@ -70,7 +96,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Entry point for the console script."""
 
     args = parse_arguments(argv)
-    resolve_cli_config(args)
+    config = resolve_cli_config(args)
+    configure_logging(config)
 
     print(_PLACEHOLDER_USAGE)
     return 0
