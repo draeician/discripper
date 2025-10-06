@@ -7,6 +7,7 @@ from datetime import timedelta
 from typing import Tuple
 
 from .bluray import BluRayNotSupportedError, inspect_blu_ray
+from .classifier import ClassificationResult, DiscType, classify_disc
 from .discovery import (
     BLURAY_INSPECTOR_CANDIDATES,
     InspectionTools,
@@ -20,6 +21,9 @@ from .ffprobe import inspect_with_ffprobe
 __all__ = [
     "DiscInfo",
     "TitleInfo",
+    "DiscType",
+    "ClassificationResult",
+    "classify_disc",
     "InspectionTools",
     "ToolAvailability",
     "discover_inspection_tools",

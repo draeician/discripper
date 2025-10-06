@@ -35,7 +35,7 @@
 - [x] Error if device missing/unreadable (non-zero exit, actionable message) [#P3-T7]
 
 ## Phase 4 – Core Classification / Processing Logic
-- [ ] Implement classifier per PRD thresholds (movie vs series) (returns type + episodes) [#P4-T1]
+- [x] Implement classifier per PRD thresholds (movie vs series) (returns type + episodes) [#P4-T1]
 - [ ] Make thresholds configurable (e.g., long-title >60min, gaps <20%) (config keys respected) [#P4-T2]
 - [ ] Episode inference for series (order + s01eNN labels) (deterministic numbering) [#P4-T3]
 - [ ] Default to movie on ambiguous structure with warning (log explains heuristic) [#P4-T4]
