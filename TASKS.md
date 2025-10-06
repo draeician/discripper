@@ -101,7 +101,7 @@
 - [x] Metadata lookup (TheTVDB/TMDB) placeholder interface (non-blocking stub) [#P12-T3]
 
 ## Phase 13 – Final QA & Acceptance
-- [ ] `scripts/acceptance.sh` runs fixtures end-to-end (exit codes & plans verified) [#P13-T1]
+- [x] `scripts/acceptance.sh` runs fixtures end-to-end (exit codes & plans verified) [#P13-T1]
 - [ ] Verify PRD acceptance criteria satisfied (checklist compiled) [#P13-T2]
 - [ ] Verify directory/naming conventions match PRD (examples produced) [#P13-T3]
 - [ ] Verify config defaults & overrides (table in docs updated) [#P13-T4]
