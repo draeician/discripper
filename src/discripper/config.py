@@ -14,6 +14,13 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "output_directory": str(Path.home() / "Videos"),
     "compression": False,
     "dry_run": False,
+    "classification": {
+        "movie_main_title_minutes": 60,
+        "movie_total_runtime_minutes": 180,
+        "series_min_duration_minutes": 20,
+        "series_max_duration_minutes": 60,
+        "series_gap_limit": 0.2,
+    },
     "naming": {
         "separator": "_",
         "lowercase": False,
@@ -27,6 +34,13 @@ CONFIG_SCHEMA: dict[str, Any] = {
     "output_directory": str,
     "compression": bool,
     "dry_run": bool,
+    "classification": {
+        "movie_main_title_minutes": (int, float),
+        "movie_total_runtime_minutes": (int, float),
+        "series_min_duration_minutes": (int, float),
+        "series_max_duration_minutes": (int, float),
+        "series_gap_limit": (int, float),
+    },
     "naming": {
         "separator": str,
         "lowercase": bool,
