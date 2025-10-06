@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Mapping
 import string
 import unicodedata
 
-__all__ = ["sanitize_component", "movie_output_path"]
+__all__ = ["sanitize_component", "movie_output_path", "series_output_path"]
 
 if TYPE_CHECKING:  # pragma: no cover - used for type checking only
     from . import TitleInfo
@@ -74,20 +74,15 @@ def sanitize_component(
     return result
 
 
-def movie_output_path(
-    title: "TitleInfo",
+def _extract_naming_preferences(
     config: Mapping[str, object],
-) -> Path:
-    """Return the destination path for a movie title based on *config*."""
+) -> tuple[str, bool]:
+    """Return separator and lowercase preferences from *config*."""
 
-    output_dir_value = config.get("output_directory")
-    if not isinstance(output_dir_value, (str, Path)):
-        raise ValueError("Configuration must define an 'output_directory' string or path")
-
-    naming_config = config.get("naming")
     separator = _FALLBACK_SEPARATOR
     lowercase = False
 
+    naming_config = config.get("naming")
     if isinstance(naming_config, Mapping):
         configured_separator = naming_config.get("separator")
         if isinstance(configured_separator, str):
@@ -95,10 +90,53 @@ def movie_output_path(
 
         lowercase = bool(naming_config.get("lowercase", False))
 
+    return separator, lowercase
+
+
+def _output_directory_from_config(config: Mapping[str, object]) -> Path:
+    output_dir_value = config.get("output_directory")
+    if not isinstance(output_dir_value, (str, Path)):
+        raise ValueError("Configuration must define an 'output_directory' string or path")
+
+    return Path(output_dir_value).expanduser()
+
+
+def movie_output_path(
+    title: "TitleInfo",
+    config: Mapping[str, object],
+) -> Path:
+    """Return the destination path for a movie title based on *config*."""
+
+    separator, lowercase = _extract_naming_preferences(config)
     sanitized_title = sanitize_component(
         title.label,
         separator=separator,
         lowercase=lowercase,
     )
 
-    return Path(output_dir_value).expanduser() / f"{sanitized_title}.mp4"
+    return _output_directory_from_config(config) / f"{sanitized_title}.mp4"
+
+
+def series_output_path(
+    series_label: str,
+    title: "TitleInfo",
+    episode_code: str,
+    config: Mapping[str, object],
+) -> Path:
+    """Return the destination path for a series episode."""
+
+    separator, lowercase = _extract_naming_preferences(config)
+    sanitized_series = sanitize_component(
+        series_label,
+        separator=separator,
+        lowercase=lowercase,
+    )
+    sanitized_episode = sanitize_component(
+        title.label,
+        separator=separator,
+        lowercase=lowercase,
+    )
+
+    directory = _output_directory_from_config(config) / sanitized_series
+    filename = f"{sanitized_series}-{episode_code}_{sanitized_episode}.mp4"
+    return directory / filename
