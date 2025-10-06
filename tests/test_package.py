@@ -18,7 +18,7 @@ def test_version_is_string() -> None:
 def test_cli_main_prints_placeholder(capsys) -> None:
     """The CLI main function prints the placeholder usage text."""
 
-    exit_code = cli.main()
+    exit_code = cli.main([])
     captured = capsys.readouterr()
 
     assert exit_code == 0

@@ -12,6 +12,7 @@ CONFIG_PATH = Path("~/.config/discripper.yaml")
 DEFAULT_CONFIG: dict[str, Any] = {
     "output_directory": str(Path.home() / "Videos"),
     "compression": False,
+    "dry_run": False,
     "naming": {
         "separator": "_",
         "lowercase": False,
