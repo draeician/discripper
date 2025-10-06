@@ -174,6 +174,32 @@ def test_run_rip_plan_creates_parent_directories(tmp_path: Path, sample_title: T
     assert isinstance(result, CompletedProcess)
 
 
+def test_run_rip_plan_refuses_to_overwrite_existing_file(
+    tmp_path: Path, sample_title: TitleInfo, caplog
+) -> None:
+    destination = tmp_path / "out.mp4"
+    destination.write_bytes(b"existing")
+    plan = rip_title(
+        tmp_path / "device.iso",
+        sample_title,
+        destination,
+        which=_ffmpeg_only,
+    )
+
+    calls: list[tuple[tuple[str, ...], bool]] = []
+
+    def fake_run(command: tuple[str, ...], check: bool) -> CompletedProcess[str]:
+        calls.append((command, check))
+        return CompletedProcess(command, 0)
+
+    with caplog.at_level("WARNING"):
+        with pytest.raises(RipExecutionError, match="Refusing to overwrite existing file"):
+            run_rip_plan(plan, run=fake_run)
+
+    assert calls == []
+    assert any("EVENT=RIP_GUARD" in message for message in caplog.messages)
+
+
 def test_run_rip_plan_skips_dry_run(
     tmp_path: Path, sample_title: TitleInfo, capsys, caplog
 ) -> None:

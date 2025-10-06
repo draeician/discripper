@@ -64,7 +64,7 @@
 - [x] Structured logs: classification summary (e.g., `EVENT=CLASSIFIED TYPE=series EPISODES=6`) [#P7-T2]
 - [x] Structured logs: rip results per file (e.g., `EVENT=RIP_DONE FILE=... BYTES=...`) [#P7-T3]
 - [x] Exit codes: 1=disc not detected, 2=rip failed, etc. (documented; enforced) [#P7-T4]
-- [ ] Prompt/guard only when destructive overwrite would occur (safe default) [#P7-T5]
+- [x] Prompt/guard only when destructive overwrite would occur (safe default) [#P7-T5]
 - [ ] Centralize exceptions → user-friendly messages (no raw tracebacks by default) [#P7-T6]
 
 ## Phase 8 – Tests & Fixtures
