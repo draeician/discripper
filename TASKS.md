@@ -65,7 +65,7 @@
 - [x] Structured logs: rip results per file (e.g., `EVENT=RIP_DONE FILE=... BYTES=...`) [#P7-T3]
 - [x] Exit codes: 1=disc not detected, 2=rip failed, etc. (documented; enforced) [#P7-T4]
 - [x] Prompt/guard only when destructive overwrite would occur (safe default) [#P7-T5]
-- [ ] Centralize exceptions → user-friendly messages (no raw tracebacks by default) [#P7-T6]
+- [x] Centralize exceptions → user-friendly messages (no raw tracebacks by default) [#P7-T6]
 
 ## Phase 8 – Tests & Fixtures
 - [ ] Add fixtures: single-movie disc JSON (titles + durations) (file present) [#P8-T1]

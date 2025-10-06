@@ -530,3 +530,27 @@ def test_main_errors_when_device_unreadable(tmp_path, capsys, monkeypatch) -> No
 
     captured = capsys.readouterr()
     assert f"Error: device path '{device}'" in captured.err
+
+
+def test_main_hides_traceback_for_unexpected_errors(
+    tmp_path, monkeypatch, capsys
+) -> None:
+    """Unexpected exceptions are converted into a friendly error message."""
+
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
+
+    _install_movie_pipeline(monkeypatch, tmp_path)
+
+    def raise_unexpected(*_args, **_kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(cli, "classify_disc", raise_unexpected)
+
+    code = cli.main([str(device)])
+
+    assert code == cli.EXIT_UNEXPECTED_ERROR
+
+    captured = capsys.readouterr()
+    assert "An unexpected error occurred" in captured.err
+    assert "Traceback" not in captured.err
