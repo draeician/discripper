@@ -13,7 +13,7 @@ from .discovery import ToolAvailability
 __all__ = ["inspect_dvd"]
 
 Runner = Callable[..., CompletedProcess[str]]
-_DISC_PATTERN = re.compile(r"disc\s*=\s*(\{.*\})", re.DOTALL)
+_DISC_PATTERN = re.compile(r"(disc|lsdvd)\s*=\s*(\{.*\})", re.DOTALL)
 
 if TYPE_CHECKING:
     from . import DiscInfo, TitleInfo
@@ -38,10 +38,18 @@ def _parse_lsdvd_output(output: str) -> Mapping[str, object]:
     if not match:
         raise ValueError("Unexpected lsdvd output; missing disc payload")
 
-    disc_dict = ast.literal_eval(match.group(1))  # nosec: controlled input from lsdvd
-    if not isinstance(disc_dict, dict):
+    key, payload_text = match.groups()
+    payload = ast.literal_eval(payload_text)  # nosec: controlled input from lsdvd
+    if not isinstance(payload, dict):
         raise ValueError("Parsed lsdvd payload is not a mapping")
-    return disc_dict
+
+    if key == "lsdvd":
+        disc_payload = payload.get("disc")
+        if not isinstance(disc_payload, Mapping):
+            raise ValueError("Parsed lsdvd wrapper does not contain disc mapping")
+        return disc_payload
+
+    return payload
 
 
 def _disc_from_payload(payload: Mapping[str, object]) -> "DiscInfo":
