@@ -108,5 +108,8 @@
 
 ## Phase 14 – Validation Against PRD
 - [x] Produce validation report mapping implementation → PRD sections (✅/❌ per item) [#P14-T1]
-- [ ] List gaps & propose minimal follow-ups (new tasks enumerated) [#P14-T2]
+- [x] List gaps & propose minimal follow-ups (new tasks enumerated) [#P14-T2]
 - [ ] Sign-off: Reviewer + Auditor notes recorded in `.codex/reviews/` & `.codex/audit/` (files present) [#P14-T3]
+
+## Phase 15 – Follow-up Improvements
+- [ ] Implement optional log file support per PRD Section 8 (configurable path + CLI flag) [#P15-T1]

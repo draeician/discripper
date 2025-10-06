@@ -84,3 +84,9 @@ This report validates the current implementation against the product requirement
 | Configurable output directory respected | ✅ | `tests/test_config.py::test_config_precedence` covers overrides. |
 | Errors handled with clear messaging | ✅ | `tests/test_cli.py::test_cli_missing_device_returns_exit_code_one` verifies messaging and exit codes. |
 
+## 10. Gap Analysis & Follow-up Tasks
+
+| Gap | Impact | Proposed Follow-up |
+| --- | --- | --- |
+| Optional log file support from PRD Section 8 is not implemented; logging only goes to stdout/stderr. | Users cannot persist structured logs for auditing or long-running rips without external tools. | Add configuration/CLI support for specifying an optional log file destination and update logging initialisation accordingly (`TASKS.md` `[#P15-T1]`). |
+
