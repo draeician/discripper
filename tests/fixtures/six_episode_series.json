@@ -1,0 +1,12 @@
+{
+  "label": "Six Episode Series",
+  "titles": [
+    {"label": "Episode 1", "duration": "00:24:30"},
+    {"label": "Episode 2", "duration": "00:24:45"},
+    {"label": "Episode 3", "duration": "00:24:15"},
+    {"label": "Episode 4", "duration": "00:24:50"},
+    {"label": "Episode 5", "duration": "00:24:40"},
+    {"label": "Episode 6", "duration": "00:24:35"},
+    {"label": "Bonus Feature", "duration": "01:10:00"}
+  ]
+}
