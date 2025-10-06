@@ -97,6 +97,7 @@ to verify each setting's default and the available override surface.
 | `naming.lowercase` | `false` | `naming.lowercase` | — | Lowercases destination paths. |
 | `naming.episode_title_strategy` | `label` | `naming.episode_title_strategy` | — | Selects episode naming strategy. |
 | `logging.level` | `INFO` | `logging.level` | `--verbose` | Flag forces `DEBUG` logging. |
+| `logging.file` | None | `logging.file` | `--log-file` | Optional log file path; leave unset to disable. |
 
 ### Example configuration
 
@@ -117,6 +118,7 @@ naming:
   episode_title_strategy: label
 logging:
   level: INFO
+  file: null
 ```
 
 When `compression` is set to `true` the CLI logs a ready-to-run
@@ -124,6 +126,9 @@ When `compression` is set to `true` the CLI logs a ready-to-run
 command automatically; it simply assembles a safe default that you can copy
 once the rip completes. Leave the option at its default of `false` to skip
 generating the compression plans.
+
+Set `logging.file` to a writable path—or pass `--log-file` on the CLI—to mirror
+console output into a persistent log file.
 
 CLI flags such as `--dry-run` and `--verbose` take precedence over values in the
 configuration file, allowing quick one-off overrides without editing disk

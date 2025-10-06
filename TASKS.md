@@ -112,4 +112,4 @@
 - [x] Sign-off: Reviewer + Auditor notes recorded in `.codex/reviews/` & `.codex/audit/` (files present) [#P14-T3]
 
 ## Phase 15 – Follow-up Improvements
-- [ ] Implement optional log file support per PRD Section 8 (configurable path + CLI flag) [#P15-T1]
+- [x] Implement optional log file support per PRD Section 8 (configurable path + CLI flag) [#P15-T1]
