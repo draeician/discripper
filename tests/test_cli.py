@@ -9,7 +9,7 @@ from pathlib import Path
 import pytest
 import yaml
 
-from discripper import cli
+from discripper import cli, config as config_module
 from discripper.core import (
     ClassificationResult,
     DiscInfo,
@@ -299,6 +299,46 @@ def test_resolve_cli_config_applies_precedence(tmp_path) -> None:
     assert resolved["output_directory"] == "/mnt/custom"
     assert resolved["logging"]["level"] == "DEBUG"
     assert resolved["dry_run"] is True
+
+
+def test_resolve_cli_config_layers_defaults_config_cli(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Explicitly verify precedence across defaults, config file, and CLI flags."""
+
+    managed_config = tmp_path / "managed-config.yaml"
+    monkeypatch.setattr(config_module, "CONFIG_PATH", managed_config)
+
+    default_args = cli.parse_arguments([])
+    resolved_defaults = cli.resolve_cli_config(default_args)
+
+    assert resolved_defaults["output_directory"] == config_module.DEFAULT_CONFIG["output_directory"]
+    assert resolved_defaults["dry_run"] is config_module.DEFAULT_CONFIG["dry_run"]
+
+    managed_config.write_text(
+        yaml.safe_dump(
+            {
+                "output_directory": "/mnt/config",
+                "logging": {"level": "WARNING"},
+                "dry_run": False,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    config_args = cli.parse_arguments([])
+    resolved_config = cli.resolve_cli_config(config_args)
+
+    assert resolved_config["output_directory"] == "/mnt/config"
+    assert resolved_config["logging"]["level"] == "WARNING"
+    assert resolved_config["dry_run"] is False
+
+    cli_args = cli.parse_arguments(["--verbose", "--dry-run"])
+    resolved_cli = cli.resolve_cli_config(cli_args)
+
+    assert resolved_cli["output_directory"] == "/mnt/config"
+    assert resolved_cli["logging"]["level"] == "DEBUG"
+    assert resolved_cli["dry_run"] is True
 
 
 def test_cli_help_mentions_device_default() -> None:
