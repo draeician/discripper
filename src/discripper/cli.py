@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import sys
 
-_PLACEHOLDER_USAGE = """discripper CLI (placeholder)\n\nUsage: discripper [options]\n\nThis interface will be implemented in future tasks."""
+_PLACEHOLDER_USAGE = (
+    "discripper CLI (placeholder)\n\n"
+    "Usage: discripper [options]\n\n"
+    "This interface will be implemented in future tasks."
+)
 
 
 def main() -> int:
