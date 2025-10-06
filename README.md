@@ -143,6 +143,35 @@ codes:
 Non-zero exit codes are accompanied by human-readable error messages on
 standard error so scripts can both log and react to failures.
 
+## Troubleshooting
+
+Jump directly to a common issue:
+
+- [Device not detected (`exit code 1`)](#device-not-detected-exit-code-1)
+- [Required tools missing from `PATH`](#required-tools-missing-from-path)
+- [Output directory cannot be created](#output-directory-cannot-be-created)
+
+### Device not detected (`exit code 1`)
+
+If the CLI exits with code 1, verify that the optical drive path is correct
+(`/dev/sr0` by default) and readable by your user. You may need to run
+`sudo usermod -a -G cdrom $USER` and log out/in so the process can access the
+device without elevated privileges.
+
+### Required tools missing from `PATH`
+
+`discripper` depends on utilities such as `ffmpeg`, `lsdvd`, and `dvdbackup`.
+If inspection fails with a "tool not found" error, re-run the install commands
+from [Prerequisites](#prerequisites) and ensure the binaries resolve via
+`which <tool>`.
+
+### Output directory cannot be created
+
+When the configured output directory is unwritable, the rip plan will abort
+before running external tools. Double-check the `output_directory` setting in
+your config file, ensure the parent folders exist, and confirm you have write
+permissions (e.g. `chmod u+w <path>`).
+
 ## Contributing
 
 1. Check the next open item in `TASKS.md`.
