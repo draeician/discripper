@@ -8,6 +8,7 @@ from pathlib import Path
 import yaml
 
 from discripper import cli
+import pytest
 
 
 def _write_config(tmp_path: Path, content: dict[str, object]) -> Path:
@@ -113,6 +114,22 @@ def test_cli_help_mentions_device_default() -> None:
     help_text = cli.build_argument_parser().format_help()
 
     assert "/dev/sr0" in help_text
+
+
+def test_cli_main_help_output_lists_expected_options(capsys) -> None:
+    """Running the CLI with --help shows usage and all defined options."""
+
+    with pytest.raises(SystemExit) as exc_info:
+        cli.main(["--help"])
+
+    assert exc_info.value.code == 0
+
+    captured = capsys.readouterr().out
+
+    assert "usage: discripper" in captured
+    assert "--config" in captured
+    assert "--verbose" in captured
+    assert "--dry-run" in captured
 
 
 def test_main_configures_info_logging_by_default() -> None:

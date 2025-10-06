@@ -19,7 +19,9 @@ _PLACEHOLDER_USAGE = (
 def build_argument_parser() -> argparse.ArgumentParser:
     """Create and return the argument parser for the CLI."""
 
-    parser = argparse.ArgumentParser(description="discripper command-line interface")
+    parser = argparse.ArgumentParser(
+        prog="discripper", description="discripper command-line interface"
+    )
     parser.add_argument(
         "device",
         nargs="?",
