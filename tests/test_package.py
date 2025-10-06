@@ -15,10 +15,13 @@ def test_version_is_string() -> None:
     assert discripper.__version__ != ""
 
 
-def test_cli_main_prints_placeholder(capsys) -> None:
+def test_cli_main_prints_placeholder(tmp_path, capsys) -> None:
     """The CLI main function prints the placeholder usage text."""
 
-    exit_code = cli.main([])
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
+
+    exit_code = cli.main([str(device)])
     captured = capsys.readouterr()
 
     assert exit_code == 0

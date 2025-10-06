@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import argparse
 import logging
+import os
 import sys
+from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from .config import load_config
@@ -94,12 +96,39 @@ def resolve_cli_config(args: argparse.Namespace) -> dict[str, Any]:
     return config
 
 
+def _is_readable_device(path: object) -> bool:
+    """Return ``True`` if *path* points to an existing readable file."""
+
+    if not isinstance(path, (str, Path)):
+        return False
+
+    try:
+        candidate = Path(path).expanduser()
+    except Exception:  # pragma: no cover - defensive
+        return False
+
+    if not candidate.exists():
+        return False
+
+    return os.access(candidate, os.R_OK)
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Entry point for the console script."""
 
     args = parse_arguments(argv)
     config = resolve_cli_config(args)
     configure_logging(config)
+
+    device_path = config.get("device")
+    if not _is_readable_device(device_path):
+        path_display = str(device_path) if device_path is not None else "<unknown>"
+        print(
+            f"Error: device path '{path_display}' not found or unreadable. "
+            "Check that the disc is inserted and the device path is correct.",
+            file=sys.stderr,
+        )
+        return 1
 
     print(_PLACEHOLDER_USAGE)
     return 0
