@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import TYPE_CHECKING, Literal, Sequence, Tuple
 
@@ -19,6 +19,18 @@ class ClassificationResult:
 
     disc_type: DiscType
     episodes: Tuple[TitleInfo, ...]
+    episode_codes: Tuple[str, ...] = field(default_factory=tuple)
+
+    def __post_init__(self) -> None:
+        if self.episode_codes and len(self.episode_codes) != len(self.episodes):
+            msg = "episode_codes must align with episodes"
+            raise ValueError(msg)
+
+    @property
+    def numbered_episodes(self) -> Tuple[Tuple[str, "TitleInfo"], ...]:
+        """Return episodes paired with their inferred ``s01eNN`` codes."""
+
+        return tuple(zip(self.episode_codes, self.episodes))
 
 
 @dataclass(frozen=True, slots=True)
@@ -53,7 +65,8 @@ def classify_disc(
     )
     if episode_candidates:
         ordered = tuple(title for _, title in episode_candidates)
-        return ClassificationResult("series", ordered)
+        codes = tuple(f"s01e{index + 1:02d}" for index in range(len(ordered)))
+        return ClassificationResult("series", ordered, codes)
 
     durations = [title.duration.total_seconds() for title in titles]
     longest_index = max(range(len(titles)), key=durations.__getitem__)
