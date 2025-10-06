@@ -24,3 +24,8 @@ def test_sanitize_component_collapses_repeated_separators() -> None:
 def test_sanitize_component_returns_fallback_when_empty() -> None:
     sanitized = sanitize_component("@@@@")
     assert sanitized == "untitled"
+
+
+def test_sanitize_component_applies_lowercase_when_requested() -> None:
+    sanitized = sanitize_component("Firefly: Serenity", lowercase=True)
+    assert sanitized == "firefly_serenity"
