@@ -41,6 +41,59 @@ After installation the `discripper` entry point is available on your `PATH`.
 
 Configuration defaults to `~/.config/discripper.yaml`, and CLI flags can override key settings. See `PRD.md` for the broader feature roadmap.
 
+## Configuration
+
+`discripper` loads its settings from a YAML file. By default the loader targets
+`~/.config/discripper.yaml`; pass `--config <path>` to point the CLI at an
+alternate file. The override works for both absolute and relative paths:
+
+```bash
+discripper --config ./discripper.dev.yaml /dev/sr0
+```
+
+### Schema overview
+
+The configuration file must define the following structure. Types are expressed
+in YAML terms—strings may include `~` for home-directory expansion.
+
+| Key | Type | Description |
+| --- | ---- | ----------- |
+| `output_directory` | string | Destination directory for ripped media (default: `~/Videos`). |
+| `compression` | boolean | Enable the optional post-rip compression pipeline. |
+| `dry_run` | boolean | Force dry-run behaviour regardless of the CLI flag. |
+| `classification.movie_main_title_minutes` | number | Minimum runtime to treat a title as the movie feature. |
+| `classification.movie_total_runtime_minutes` | number | Runtime threshold for classifying a disc as a movie. |
+| `classification.series_min_duration_minutes` | number | Shortest duration considered an episode. |
+| `classification.series_max_duration_minutes` | number | Longest duration considered an episode. |
+| `classification.series_gap_limit` | number | Allowed variance (0-1) between episode durations. |
+| `naming.separator` | string | Separator inserted between filename segments. |
+| `naming.lowercase` | boolean | When true, lowercase all generated paths. |
+| `logging.level` | string or integer | Logging level (e.g. `INFO`, `DEBUG`, or `20`). |
+
+### Example configuration
+
+```yaml
+# ~/.config/discripper.yaml
+output_directory: ~/Videos/discripper
+compression: false
+dry_run: false
+classification:
+  movie_main_title_minutes: 60
+  movie_total_runtime_minutes: 180
+  series_min_duration_minutes: 20
+  series_max_duration_minutes: 60
+  series_gap_limit: 0.2
+naming:
+  separator: _
+  lowercase: false
+logging:
+  level: INFO
+```
+
+CLI flags such as `--dry-run` and `--verbose` take precedence over values in the
+configuration file, allowing quick one-off overrides without editing disk
+settings.
+
 ## Usage
 
 `discripper` inspects the provided optical device, classifies the contents, and plans rips into the configured output directory (default: `~/Videos`). The CLI exposes a consistent workflow for both movies and series.
