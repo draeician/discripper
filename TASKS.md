@@ -17,7 +17,7 @@
 - [x] Add `LICENSE` and minimal top-level `README.md` (files present) [#P1-T7]
 
 ## Phase 2 – Config & CLI
-- [ ] Implement config loader reading `{CONFIG_PATH}` (defaults used if file missing) [#P2-T1]
+- [x] Implement config loader reading `{CONFIG_PATH}` (defaults used if file missing) [#P2-T1]
 - [ ] Implement CLI flags: `--config`, `--verbose`, `--dry-run` (flags override config values) [#P2-T2]
 - [ ] Add device argument with default `/dev/sr0` (help shows default) [#P2-T3]
 - [ ] Wire logging levels (INFO default, DEBUG with `--verbose`) (log level toggles) [#P2-T4]
