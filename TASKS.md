@@ -104,7 +104,7 @@
 - [x] `scripts/acceptance.sh` runs fixtures end-to-end (exit codes & plans verified) [#P13-T1]
 - [x] Verify PRD acceptance criteria satisfied (checklist compiled) [#P13-T2]
 - [x] Verify directory/naming conventions match PRD (examples produced) [#P13-T3]
-- [ ] Verify config defaults & overrides (table in docs updated) [#P13-T4]
+- [x] Verify config defaults & overrides (table in docs updated) [#P13-T4]
 
 ## Phase 14 – Validation Against PRD
 - [ ] Produce validation report mapping implementation → PRD sections (✅/❌ per item) [#P14-T1]

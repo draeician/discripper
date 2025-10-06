@@ -76,6 +76,28 @@ series discs. Use the default `label` strategy to keep the source title labels, 
 `episode-number` for generic `Episode 01` style names, or point to a custom callable using
 the `module:callable` notation to plug in project-specific logic.
 
+### Defaults & overrides
+
+`discripper` resolves configuration in three tiers: built-in defaults,
+values from the active YAML file, and finally CLI flags. Use the table below
+to verify each setting's default and the available override surface.
+
+| Setting | Default | Config key | CLI override | Notes |
+| --- | --- | --- | --- | --- |
+| Configuration file path | `~/.config/discripper.yaml` | — | `--config` | Expands `~`; accepts relative paths. |
+| `output_directory` | `~/Videos` | `output_directory` | — | Created automatically. |
+| `compression` | `false` | `compression` | — | Emits HandBrake commands. |
+| `dry_run` | `false` | `dry_run` | `--dry-run`, `--simulate` | CLI flags override config. |
+| `classification.movie_main_title_minutes` | `60` | `classification.movie_main_title_minutes` | — | Minutes for main title. |
+| `classification.movie_total_runtime_minutes` | `180` | `classification.movie_total_runtime_minutes` | — | Max runtime for movies. |
+| `classification.series_min_duration_minutes` | `20` | `classification.series_min_duration_minutes` | — | Episode minimum length. |
+| `classification.series_max_duration_minutes` | `60` | `classification.series_max_duration_minutes` | — | Episode maximum length. |
+| `classification.series_gap_limit` | `0.2` | `classification.series_gap_limit` | — | Allowed duration variance. |
+| `naming.separator` | `_` | `naming.separator` | — | Filename segment joiner. |
+| `naming.lowercase` | `false` | `naming.lowercase` | — | Lowercases destination paths. |
+| `naming.episode_title_strategy` | `label` | `naming.episode_title_strategy` | — | Selects episode naming strategy. |
+| `logging.level` | `INFO` | `logging.level` | `--verbose` | Flag forces `DEBUG` logging. |
+
 ### Example configuration
 
 ```yaml
