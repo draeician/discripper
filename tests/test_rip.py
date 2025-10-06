@@ -156,6 +156,24 @@ def test_run_rip_plan_invokes_subprocess(tmp_path: Path, sample_title: TitleInfo
     assert result.returncode == 0
 
 
+def test_run_rip_plan_creates_parent_directories(tmp_path: Path, sample_title: TitleInfo) -> None:
+    destination = tmp_path / "sub" / "folder" / "out.mp4"
+    plan = rip_title(
+        tmp_path / "device.iso",
+        sample_title,
+        destination,
+        which=_ffmpeg_only,
+    )
+
+    def fake_run(command: tuple[str, ...], check: bool) -> CompletedProcess[str]:
+        assert destination.parent.exists()
+        return CompletedProcess(command, 0)
+
+    result = run_rip_plan(plan, run=fake_run)
+
+    assert isinstance(result, CompletedProcess)
+
+
 def test_run_rip_plan_skips_dry_run(
     tmp_path: Path, sample_title: TitleInfo, capsys
 ) -> None:

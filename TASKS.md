@@ -57,7 +57,7 @@
 - [x] Movie pattern: `<movieTitle>.mp4` in configured output dir (file path correct) [#P6-T3]
 - [x] Series pattern: `<seriesName>/<seriesName>-s01eNN_<title>.mp4` (path shape correct) [#P6-T4]
 - [x] Collision handling appends suffix `_1`, `_2`, … (no overwrite occurs) [#P6-T5]
-- [ ] Ensure parent directories are created as needed (dirs created automatically) [#P6-T6]
+- [x] Ensure parent directories are created as needed (dirs created automatically) [#P6-T6]
 
 ## Phase 7 – Orchestration, Logging, Error Handling
 - [ ] CLI main flow: config → inspect → classify → plan → rip (end-to-end path executes) [#P7-T1]
