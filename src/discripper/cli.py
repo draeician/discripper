@@ -20,6 +20,12 @@ def build_argument_parser() -> argparse.ArgumentParser:
 
     parser = argparse.ArgumentParser(description="discripper command-line interface")
     parser.add_argument(
+        "device",
+        nargs="?",
+        default="/dev/sr0",
+        help="Path to the optical media device (default: %(default)s).",
+    )
+    parser.add_argument(
         "--config",
         dest="config_path",
         help="Path to the configuration file to use.",
@@ -48,6 +54,8 @@ def resolve_cli_config(args: argparse.Namespace) -> dict[str, Any]:
     """Return the effective configuration after applying CLI overrides."""
 
     config = load_config(args.config_path)
+
+    config["device"] = args.device
 
     if args.verbose:
         config.setdefault("logging", {})["level"] = "DEBUG"

@@ -25,6 +25,14 @@ def test_parse_arguments_supports_expected_flags() -> None:
     assert args.dry_run is True
 
 
+def test_parse_arguments_includes_device_with_default() -> None:
+    """The parser exposes a device argument with the expected default value."""
+
+    args = cli.parse_arguments([])
+
+    assert args.device == "/dev/sr0"
+
+
 def test_resolve_cli_config_uses_custom_config_path(tmp_path) -> None:
     """Providing --config loads and returns the specified configuration file."""
 
@@ -41,6 +49,17 @@ def test_resolve_cli_config_uses_custom_config_path(tmp_path) -> None:
 
     assert resolved["logging"]["level"] == "WARNING"
     assert resolved["dry_run"] is False
+
+
+def test_resolve_cli_config_sets_device_from_arguments(tmp_path) -> None:
+    """The device argument is propagated into the resolved configuration."""
+
+    config_path = _write_config(tmp_path, {})
+
+    args = cli.parse_arguments(["--config", str(config_path), "/dev/dvd"])
+    resolved = cli.resolve_cli_config(args)
+
+    assert resolved["device"] == "/dev/dvd"
 
 
 def test_resolve_cli_config_overrides_logging_with_verbose(tmp_path) -> None:
@@ -63,3 +82,11 @@ def test_resolve_cli_config_sets_dry_run_flag(tmp_path) -> None:
     resolved = cli.resolve_cli_config(args)
 
     assert resolved["dry_run"] is True
+
+
+def test_cli_help_mentions_device_default() -> None:
+    """The help output mentions the default device path."""
+
+    help_text = cli.build_argument_parser().format_help()
+
+    assert "/dev/sr0" in help_text
