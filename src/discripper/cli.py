@@ -7,15 +7,100 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any, Callable, Mapping, Sequence
 
 from .config import load_config
-
-_PLACEHOLDER_USAGE = (
-    "discripper CLI (placeholder)\n\n"
-    "Usage: discripper [options]\n\n"
-    "This interface will be implemented in future tasks."
+from .core import (
+    BluRayNotSupportedError,
+    ClassificationResult,
+    DiscInfo,
+    InspectionTools,
+    RipExecutionError,
+    RipPlan,
+    TitleInfo,
+    ToolAvailability,
+    classify_disc,
+    discover_inspection_tools,
+    inspect_dvd,
+    inspect_with_ffprobe,
+    movie_output_path,
+    rip_disc,
+    run_rip_plan,
+    series_output_path,
+    thresholds_from_config,
 )
+
+
+def _print_error(message: str) -> None:
+    """Emit *message* to :data:`sys.stderr` with a standard prefix."""
+
+    print(f"Error: {message}", file=sys.stderr)
+
+
+def _inspect_disc(device: str, tools: InspectionTools) -> DiscInfo:
+    """Return :class:`DiscInfo` for *device* using discovered *tools*."""
+
+    dvd_tool = tools.dvd
+    if isinstance(dvd_tool, ToolAvailability):
+        return inspect_dvd(device, tool=dvd_tool)
+
+    fallback_tool = tools.fallback
+    if isinstance(fallback_tool, ToolAvailability):
+        return inspect_with_ffprobe(device, tool=fallback_tool)
+
+    raise RuntimeError(
+        "No supported inspection tools found. Install 'lsdvd' or 'ffprobe' and try again."
+    )
+
+
+def _destination_factory(
+    disc: DiscInfo,
+    classification: ClassificationResult,
+    config: Mapping[str, Any],
+) -> Callable[[TitleInfo, str | None], Path]:
+    """Return a destination factory compatible with :func:`rip_disc`."""
+
+    def factory(title: TitleInfo, episode_code: str | None) -> Path:
+        if classification.disc_type == "movie":
+            return movie_output_path(title, config)
+
+        if not episode_code:
+            raise RuntimeError(
+                "Series classification requires episode codes for destination planning"
+            )
+
+        return series_output_path(disc.label, title, episode_code, config)
+
+    return factory
+
+
+def _plan_rips(
+    device: str,
+    classification: ClassificationResult,
+    disc: DiscInfo,
+    config: Mapping[str, Any],
+    *,
+    dry_run: bool,
+):
+    destination_factory = _destination_factory(disc, classification, config)
+    return rip_disc(
+        device,
+        classification,
+        destination_factory,
+        dry_run=dry_run,
+    )
+
+
+def _execute_rip_plans(plans: Sequence[RipPlan]) -> int:
+    """Run *plans* sequentially and return the resulting exit code."""
+
+    for plan in plans:
+        try:
+            run_rip_plan(plan)
+        except RipExecutionError as exc:
+            _print_error(str(exc))
+            return exc.exit_code
+    return 0
 
 
 def build_argument_parser() -> argparse.ArgumentParser:
@@ -123,15 +208,41 @@ def main(argv: Sequence[str] | None = None) -> int:
     device_path = config.get("device")
     if not _is_readable_device(device_path):
         path_display = str(device_path) if device_path is not None else "<unknown>"
-        print(
-            f"Error: device path '{path_display}' not found or unreadable. "
-            "Check that the disc is inserted and the device path is correct.",
-            file=sys.stderr,
+        _print_error(
+            "device path "
+            f"'{path_display}' not found or unreadable. Check that the disc is inserted "
+            "and the device path is correct."
         )
         return 1
 
-    print(_PLACEHOLDER_USAGE)
-    return 0
+    device = str(Path(str(device_path)).expanduser())
+
+    try:
+        tools = discover_inspection_tools()
+        disc = _inspect_disc(device, tools)
+    except BluRayNotSupportedError as exc:
+        _print_error(str(exc))
+        return 1
+    except Exception as exc:  # pragma: no cover - defensive
+        _print_error(f"Failed to inspect disc: {exc}")
+        return 1
+
+    thresholds = thresholds_from_config(config)
+    classification = classify_disc(disc, thresholds=thresholds)
+
+    try:
+        plans = _plan_rips(
+            device,
+            classification,
+            disc,
+            config,
+            dry_run=bool(config.get("dry_run", False)),
+        )
+    except Exception as exc:
+        _print_error(f"Failed to prepare rip plan: {exc}")
+        return 1
+
+    return _execute_rip_plans(plans)
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -60,7 +60,7 @@
 - [x] Ensure parent directories are created as needed (dirs created automatically) [#P6-T6]
 
 ## Phase 7 – Orchestration, Logging, Error Handling
-- [ ] CLI main flow: config → inspect → classify → plan → rip (end-to-end path executes) [#P7-T1]
+- [x] CLI main flow: config → inspect → classify → plan → rip (end-to-end path executes) [#P7-T1]
 - [ ] Structured logs: classification summary (e.g., `EVENT=CLASSIFIED TYPE=series EPISODES=6`) [#P7-T2]
 - [ ] Structured logs: rip results per file (e.g., `EVENT=RIP_DONE FILE=... BYTES=...`) [#P7-T3]
 - [ ] Exit codes: 1=disc not detected, 2=rip failed, etc. (documented; enforced) [#P7-T4]
