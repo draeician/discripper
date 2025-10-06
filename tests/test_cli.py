@@ -11,6 +11,7 @@ import yaml
 
 from discripper import cli, config as config_module
 from discripper.core import (
+    BluRayNotSupportedError,
     ClassificationResult,
     DiscInfo,
     InspectionTools,
@@ -582,6 +583,78 @@ def test_main_returns_rip_failure_exit_code(monkeypatch, tmp_path, capsys) -> No
 
     captured = capsys.readouterr()
     assert "command failed" in captured.err
+
+
+def test_execute_rip_plans_propagates_rip_exit_code(monkeypatch, tmp_path) -> None:
+    """The rip plan executor surfaces the exit code from RipExecutionError."""
+
+    plan = RipPlan(
+        device="/dev/sr0",
+        title=TitleInfo(label="Sample", duration=timedelta(minutes=5)),
+        destination=tmp_path / "sample.mp4",
+        command=("echo", "rip"),
+        will_execute=False,
+    )
+
+    def fail_with_custom_code(_plan: RipPlan):
+        raise RipExecutionError("custom failure", exit_code=7)
+
+    monkeypatch.setattr(cli, "run_rip_plan", fail_with_custom_code)
+
+    exit_code = cli._execute_rip_plans((plan,))
+
+    assert exit_code == 7
+
+
+def test_execute_rip_plans_handles_unexpected_exception(monkeypatch, tmp_path, capsys) -> None:
+    """Unexpected exceptions during ripping map to the unexpected error exit code."""
+
+    plan = RipPlan(
+        device="/dev/sr0",
+        title=TitleInfo(label="Sample", duration=timedelta(minutes=5)),
+        destination=tmp_path / "sample.mp4",
+        command=("echo", "rip"),
+        will_execute=False,
+    )
+
+    def raise_unexpected(_plan: RipPlan):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(cli, "run_rip_plan", raise_unexpected)
+
+    exit_code = cli._execute_rip_plans((plan,))
+
+    assert exit_code == cli.EXIT_UNEXPECTED_ERROR
+    assert "Unexpected ripping failure" in capsys.readouterr().err
+
+
+def test_main_maps_bluray_errors_to_disc_not_detected(
+    monkeypatch, tmp_path, capsys
+) -> None:
+    """Blu-ray support errors are treated as disc detection failures."""
+
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
+
+    monkeypatch.setattr(
+        cli,
+        "discover_inspection_tools",
+        lambda: InspectionTools(
+            dvd=ToolAvailability("lsdvd", "/usr/bin/lsdvd"),
+            fallback=None,
+            blu_ray=None,
+        ),
+    )
+
+    def raise_bluray(*_args, **_kwargs):
+        raise BluRayNotSupportedError("Blu-ray not supported")
+
+    monkeypatch.setattr(cli, "_inspect_disc", raise_bluray)
+
+    exit_code = cli.main([str(device)])
+
+    assert exit_code == cli.EXIT_DISC_NOT_DETECTED
+    assert "Blu-ray not supported" in capsys.readouterr().err
 
 
 def test_main_errors_when_no_inspection_tools(monkeypatch, tmp_path, capsys) -> None:
