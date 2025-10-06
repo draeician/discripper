@@ -14,7 +14,7 @@
 - [x] Add `.gitignore` for Python, build, and test artifacts (ignored files confirmed) [#P1-T4]
 - [x] Add `ruff` config and minimal rule-set in `pyproject.toml` (ruff runs clean) [#P1-T5]
 - [x] Add `pytest` config (`-q`, `pythonpath=src`) (tests discover/run) [#P1-T6]
-- [ ] Add `LICENSE` and minimal top-level `README.md` (files present) [#P1-T7]
+- [x] Add `LICENSE` and minimal top-level `README.md` (files present) [#P1-T7]
 
 ## Phase 2 – Config & CLI
 - [ ] Implement config loader reading `{CONFIG_PATH}` (defaults used if file missing) [#P2-T1]
