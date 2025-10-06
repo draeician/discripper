@@ -132,6 +132,8 @@ def run_rip_plan(
         print(f"[dry-run] Would execute: {shlex.join(plan.command)}")
         return None
 
+    plan.destination.parent.mkdir(parents=True, exist_ok=True)
+
     try:
         return run(plan.command, check=True)
     except FileNotFoundError as exc:  # pragma: no cover - defensive on Python <3.11
