@@ -102,7 +102,7 @@
 
 ## Phase 13 – Final QA & Acceptance
 - [x] `scripts/acceptance.sh` runs fixtures end-to-end (exit codes & plans verified) [#P13-T1]
-- [ ] Verify PRD acceptance criteria satisfied (checklist compiled) [#P13-T2]
+- [x] Verify PRD acceptance criteria satisfied (checklist compiled) [#P13-T2]
 - [ ] Verify directory/naming conventions match PRD (examples produced) [#P13-T3]
 - [ ] Verify config defaults & overrides (table in docs updated) [#P13-T4]
 
