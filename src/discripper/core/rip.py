@@ -6,7 +6,8 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from os import fspath
 from pathlib import Path
-from typing import TYPE_CHECKING, Tuple
+from subprocess import CompletedProcess, run as subprocess_run
+from typing import TYPE_CHECKING, Optional, Tuple, Any
 
 if TYPE_CHECKING:  # pragma: no cover - import for type checking only
     from . import ClassificationResult, TitleInfo
@@ -57,6 +58,28 @@ def rip_title(
         command=command,
         will_execute=not dry_run,
     )
+
+
+def run_rip_plan(
+    plan: RipPlan,
+    *,
+    run: Callable[..., CompletedProcess[Any]] = subprocess_run,
+) -> Optional[CompletedProcess[Any]]:
+    """Execute *plan* using :command:`ffmpeg`.
+
+    The :class:`RipPlan` returned by :func:`rip_title` describes an ``ffmpeg``
+    invocation that reads from a device node and writes an MP4 file.  This
+    helper runs that command by delegating to :func:`subprocess.run` with
+    ``check=True`` so callers receive an exception when ``ffmpeg`` fails.
+
+    When ``plan.will_execute`` is :data:`False` (e.g., for ``--dry-run``), the
+    function does nothing and returns :data:`None`.
+    """
+
+    if not plan.will_execute:
+        return None
+
+    return run(plan.command, check=True)
 
 
 def rip_disc(

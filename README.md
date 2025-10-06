@@ -20,6 +20,13 @@ discripper --help
 
 Configuration will default to `~/.config/discripper.yaml` with CLI flags to override key settings. See `PRD.md` for the planned feature roadmap.
 
+## Ripping prerequisites
+
+The initial ripping path relies on [`ffmpeg`](https://ffmpeg.org/) being available on the system `PATH`.  The command reads
+directly from the supplied device node (for example `/dev/sr0`) and writes an MP4 file to the requested destination.  CSS or
+advanced Blu-ray decryption is **not** handled by `discripper`; external tools or system packages must be used when discs
+require additional decoding support.
+
 ## Contributing
 
 1. Check the next open item in `TASKS.md`.

@@ -5,12 +5,15 @@ from pathlib import Path
 
 import pytest
 
+from subprocess import CompletedProcess
+
 from discripper.core import (
     ClassificationResult,
     RipPlan,
     TitleInfo,
     rip_disc,
     rip_title,
+    run_rip_plan,
 )
 
 
@@ -79,3 +82,35 @@ def test_rip_disc_series_uses_episode_codes(tmp_path: Path) -> None:
         "s01e02_Episode Two.mp4",
     ]
     assert all(plan.will_execute is False for plan in plans)
+
+
+def test_run_rip_plan_invokes_subprocess(tmp_path: Path, sample_title: TitleInfo) -> None:
+    plan = rip_title(tmp_path / "device.iso", sample_title, tmp_path / "out.mp4")
+
+    calls: list[tuple[tuple[str, ...], bool]] = []
+
+    def fake_run(command: tuple[str, ...], check: bool) -> CompletedProcess[str]:
+        calls.append((command, check))
+        return CompletedProcess(command, 0)
+
+    result = run_rip_plan(plan, run=fake_run)
+
+    assert calls == [(plan.command, True)]
+    assert isinstance(result, CompletedProcess)
+    assert result.returncode == 0
+
+
+def test_run_rip_plan_skips_dry_run(tmp_path: Path, sample_title: TitleInfo) -> None:
+    plan = rip_title(
+        tmp_path / "device.iso",
+        sample_title,
+        tmp_path / "out.mp4",
+        dry_run=True,
+    )
+
+    def fake_run(command: tuple[str, ...], check: bool) -> CompletedProcess[str]:
+        raise AssertionError("run should not be called for dry-run plans")
+
+    result = run_rip_plan(plan, run=fake_run)
+
+    assert result is None
