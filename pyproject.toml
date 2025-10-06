@@ -10,6 +10,9 @@ authors = [{ name = "discripper contributors" }]
 license = { text = "MIT" }
 requires-python = ">=3.10"
 
+[project.scripts]
+discripper = "discripper.cli:main"
+
 [tool.setuptools]
 package-dir = {"" = "src"}
 
