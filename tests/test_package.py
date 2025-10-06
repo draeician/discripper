@@ -1,5 +1,6 @@
 """Smoke tests for the discripper package."""
 
+from importlib import metadata
 from pathlib import Path
 import sys
 
@@ -49,3 +50,19 @@ def test_pytest_pythonpath_includes_src() -> None:
 
     assert expected_src.exists()
     assert any(Path(path).resolve() == expected_src for path in map(Path, sys.path))
+
+
+def test_console_script_entry_point_registered() -> None:
+    """The console script entry point resolves to the CLI main function."""
+
+    entry_points = metadata.entry_points()
+    if hasattr(entry_points, "select"):
+        console_scripts = entry_points.select(group="console_scripts")
+    else:  # pragma: no cover - fallback for older importlib.metadata APIs
+        console_scripts = entry_points.get("console_scripts", [])
+
+    discripper_entry = next((ep for ep in console_scripts if ep.name == "discripper"), None)
+
+    assert discripper_entry is not None
+    assert discripper_entry.value == "discripper.cli:main"
+    assert discripper_entry.load() is cli.main
