@@ -44,7 +44,7 @@
 - [x] Unit tests: borderline/ambiguous fixture (falls back to movie) [#P4-T7]
 
 ## Phase 5 – Execution / Ripping Pipeline
-- [ ] Implement `rip_title(device, title_info, dest_path, *, dry_run=False)` (returns success plan) [#P5-T1]
+- [x] Implement `rip_title(device, title_info, dest_path, *, dry_run=False)` (returns success plan) [#P5-T1]
 - [ ] Implement `rip_disc(...)` orchestrator for movie & series flows (iterates titles) [#P5-T2]
 - [ ] Implement `ffmpeg`-based basic ripping path (document constraints) (ffmpeg path works) [#P5-T3]
 - [ ] Detect and use `dvdbackup`/other tools if available (choose simplest successful path) [#P5-T4]
