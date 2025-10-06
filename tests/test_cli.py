@@ -132,23 +132,58 @@ def test_cli_main_help_output_lists_expected_options(capsys) -> None:
     assert "--dry-run" in captured
 
 
-def test_main_configures_info_logging_by_default() -> None:
+def test_main_configures_info_logging_by_default(tmp_path) -> None:
     """INFO logging is enabled when --verbose is not supplied."""
+
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
 
     logging.basicConfig(level=logging.NOTSET, force=True)
     try:
-        cli.main([])
+        exit_code = cli.main([str(device)])
+        assert exit_code == 0
         assert logging.getLogger().getEffectiveLevel() == logging.INFO
     finally:
         logging.basicConfig(level=logging.NOTSET, force=True)
 
 
-def test_main_configures_debug_logging_with_verbose() -> None:
+def test_main_configures_debug_logging_with_verbose(tmp_path) -> None:
     """DEBUG logging is enabled when --verbose is provided."""
+
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
 
     logging.basicConfig(level=logging.NOTSET, force=True)
     try:
-        cli.main(["--verbose"])
+        exit_code = cli.main(["--verbose", str(device)])
+        assert exit_code == 0
         assert logging.getLogger().getEffectiveLevel() == logging.DEBUG
     finally:
         logging.basicConfig(level=logging.NOTSET, force=True)
+
+
+def test_main_errors_when_device_missing(capsys) -> None:
+    """A helpful error is emitted when the configured device does not exist."""
+
+    code = cli.main(["/path/that/does/not/exist"])
+
+    assert code == 1
+
+    captured = capsys.readouterr()
+    assert "Error: device path '/path/that/does/not/exist'" in captured.err
+
+
+def test_main_errors_when_device_unreadable(tmp_path, capsys, monkeypatch) -> None:
+    """The CLI refuses to proceed if the device exists but lacks read access."""
+
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
+
+    monkeypatch.setattr(cli.os, "access", lambda *_: False)
+
+    code = cli.main([str(device)])
+
+    assert code == 1
+
+    captured = capsys.readouterr()
+    assert f"Error: device path '{device}'" in captured.err
