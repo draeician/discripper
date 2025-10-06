@@ -1,6 +1,8 @@
 import logging
 from datetime import timedelta
 
+import pytest
+
 from discripper.core import (
     DiscInfo,
     TitleInfo,
@@ -126,3 +128,49 @@ def test_classify_disc_ambiguous_fixture_defaults_to_movie():
     assert result.disc_type == "movie"
     assert result.episodes == (disc.titles[0],)
     assert result.episode_codes == ()
+
+
+@pytest.mark.parametrize(
+    ("fixture_name", "expected_type", "expected_labels", "expected_codes"),
+    [
+        ("sample_disc", "movie", ["Pilot"], ()),
+        ("single_movie_disc", "movie", ["Main Feature"], ()),
+        (
+            "six_episode_series",
+            "series",
+            [
+                "Episode 1 - The Arrival",
+                "Episode 3 - Power Surge",
+                "Episode 5 - Shadow Run",
+                "Episode 2 - Hidden Signals",
+                "Episode 6 - Last Light",
+                "Episode 4 - Broken Trust",
+            ],
+            (
+                "s01e01",
+                "s01e02",
+                "s01e03",
+                "s01e04",
+                "s01e05",
+                "s01e06",
+            ),
+        ),
+        ("ambiguous_disc", "movie", ["Borderline Feature"], ()),
+    ],
+)
+def test_fixture_classifications_are_deterministic(
+    fixture_name: str,
+    expected_type: str,
+    expected_labels: list[str],
+    expected_codes: tuple[str, ...],
+) -> None:
+    disc = inspect_from_fixture(fixture_name)
+
+    result = classify_disc(disc)
+
+    labels = [title.label for title in result.episodes]
+
+    assert result.disc_type == expected_type
+    assert labels == expected_labels
+    assert result.episode_codes == expected_codes
+    assert result.numbered_episodes == tuple(zip(expected_codes, result.episodes))
