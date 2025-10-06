@@ -62,6 +62,25 @@ def test_classify_disc_series_detects_similar_episodes():
     )
 
 
+def test_classify_disc_series_from_fixture_detects_all_six_episodes():
+    disc = inspect_from_fixture("six_episode_series")
+
+    result = classify_disc(disc)
+
+    assert result.disc_type == "series"
+    assert len(result.episodes) == 6
+    assert all(title.label.startswith("Episode ") for title in result.episodes)
+    assert result.episode_codes == (
+        "s01e01",
+        "s01e02",
+        "s01e03",
+        "s01e04",
+        "s01e05",
+        "s01e06",
+    )
+    assert result.numbered_episodes == tuple(zip(result.episode_codes, result.episodes))
+
+
 def test_classify_disc_threshold_overrides_from_config():
     episode_titles = (
         TitleInfo(label="Ep1", duration=timedelta(minutes=25)),
