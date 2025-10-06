@@ -6,13 +6,31 @@ build-backend = "setuptools.build_meta"
 name = "discripper"
 version = "0.1.0"
 description = "Utilities for inspecting and ripping optical discs."
+readme = "README.md"
 authors = [{ name = "discripper contributors" }]
-license = { text = "MIT" }
+license = "MIT"
 requires-python = ">=3.10"
 dependencies = [
+    "PyYAML>=6.0",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: End Users/Desktop",
+    "Natural Language :: English",
+    "Operating System :: POSIX",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Utilities",
+]
+license-files = ["LICENSE"]
+
+[project.optional-dependencies]
+dev = [
     "pytest>=7.0",
     "pytest-cov>=4.0",
-    "PyYAML>=6.0",
 ]
 
 [project.scripts]
