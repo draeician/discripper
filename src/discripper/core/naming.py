@@ -1,10 +1,16 @@
 """Utilities for creating filesystem-safe names from disc metadata."""
+
 from __future__ import annotations
 
+from pathlib import Path
+from typing import TYPE_CHECKING, Mapping
 import string
 import unicodedata
 
-__all__ = ["sanitize_component"]
+__all__ = ["sanitize_component", "movie_output_path"]
+
+if TYPE_CHECKING:  # pragma: no cover - used for type checking only
+    from . import TitleInfo
 
 _SAFE_CHARS = set(string.ascii_letters + string.digits)
 _FALLBACK_NAME = "untitled"
@@ -66,3 +72,33 @@ def sanitize_component(
         return result.lower()
 
     return result
+
+
+def movie_output_path(
+    title: "TitleInfo",
+    config: Mapping[str, object],
+) -> Path:
+    """Return the destination path for a movie title based on *config*."""
+
+    output_dir_value = config.get("output_directory")
+    if not isinstance(output_dir_value, (str, Path)):
+        raise ValueError("Configuration must define an 'output_directory' string or path")
+
+    naming_config = config.get("naming")
+    separator = _FALLBACK_SEPARATOR
+    lowercase = False
+
+    if isinstance(naming_config, Mapping):
+        configured_separator = naming_config.get("separator")
+        if isinstance(configured_separator, str):
+            separator = configured_separator
+
+        lowercase = bool(naming_config.get("lowercase", False))
+
+    sanitized_title = sanitize_component(
+        title.label,
+        separator=separator,
+        lowercase=lowercase,
+    )
+
+    return Path(output_dir_value).expanduser() / f"{sanitized_title}.mp4"

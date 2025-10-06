@@ -1,4 +1,7 @@
-from discripper.core import sanitize_component
+from datetime import timedelta
+from pathlib import Path
+
+from discripper.core import TitleInfo, movie_output_path, sanitize_component
 
 
 def test_sanitize_component_replaces_unsafe_characters() -> None:
@@ -29,3 +32,24 @@ def test_sanitize_component_returns_fallback_when_empty() -> None:
 def test_sanitize_component_applies_lowercase_when_requested() -> None:
     sanitized = sanitize_component("Firefly: Serenity", lowercase=True)
     assert sanitized == "firefly_serenity"
+
+
+def test_movie_output_path_uses_configured_directory(tmp_path: Path) -> None:
+    title = TitleInfo(label="The Matrix", duration=timedelta(minutes=136))
+    config = {
+        "output_directory": str(tmp_path / "Movies"),
+        "naming": {"separator": "-", "lowercase": True},
+    }
+
+    path = movie_output_path(title, config)
+
+    assert path == tmp_path / "Movies" / "the-matrix.mp4"
+
+
+def test_movie_output_path_defaults_without_naming_section(tmp_path: Path) -> None:
+    title = TitleInfo(label="Strange: Name", duration=timedelta(minutes=90))
+    config = {"output_directory": tmp_path}
+
+    path = movie_output_path(title, config)
+
+    assert path.name == "Strange_Name.mp4"
