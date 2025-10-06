@@ -5,25 +5,29 @@ role: Coder
 priority: P1
 phase_id: "P2-T1"
 depends_on:
-  - 4a7d2c19
-  - ae56b201
+  - 9b3e6d84
+  - d42c9f70
   - f3a1c5d2
 acceptance:
-  - "Implement a config loader that merges defaults, `{CONFIG_PATH}` contents, and CLI overrides with precedence: defaults < file < flags."
-  - "Support overriding the config path via a CLI option or function argument for tests."
-  - "Unit tests cover precedence scenarios (no file, file only, file plus overrides) and pass with `pytest -q`."
+  - "`src/discripper/core/config.py` implements a loader that starts from project defaults, reads `~/.config/discripper.yaml` when present, and merges CLI overrides with precedence defaults < file < overrides."
+  - "`discripper --help` documents a `--config-path` (or similarly named) flag that lets users specify an alternate config file path."
+  - "Unit tests in `tests/test_config.py` cover no-file, file-only, and file-plus-overrides scenarios using temporary paths, and the suite passes with `pytest -q --cov=src --cov-fail-under=80`."
 evidence:
   expected:
-    - "pytest -q"
+    - "pip install -e ."
+    - "ruff check ."
+    - "pytest -q --cov=src --cov-fail-under=80"
+    - "discripper --help"
   artifacts:
-    - "src/{PROJECT_SLUG}/config.py"
-    - "tests/config/test_loader.py"
+    - "src/discripper/core/config.py"
+    - "src/discripper/cli.py"
+    - "tests/test_config.py"
 ---
 
 ## Context
-Phase 2 introduces configuration management; we need a loader that respects `{CONFIG_PATH}` while allowing CLI flags to take priority per the PRD.
+Phase 2 adds real configuration handling so the CLI can honor defaults while letting users override settings via config files and command-line flags.
 
 ## Plan
-- Define defaults and implement loader functions/classes that read YAML from `{CONFIG_PATH}` when present.
-- Allow callers to override the config path (for CLI flag + testing) and merge inputs with correct precedence.
-- Add targeted pytest coverage verifying precedence logic and ensure the suite passes.
+- Implement the configuration loader in `src/discripper/core/config.py`, including YAML parsing and precedence handling aligned with the PRD. 
+- Extend the CLI to expose a `--config-path` flag that feeds into the loader while continuing to support the default at `~/.config/discripper.yaml`.
+- Add comprehensive pytest coverage around precedence scenarios and ensure all local gates succeed.

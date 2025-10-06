@@ -6,21 +6,25 @@ priority: P0
 phase_id: "P1-T1"
 depends_on: []
 acceptance:
-  - "`pyproject.toml` defines a `[project]` table for {PROJECT_SLUG} with name, version, description, authors, and readme using PEP 621 fields."
-  - "`src/{PROJECT_SLUG}/__init__.py` and `tests/` exist so the src layout and baseline test tree are ready."
-  - "`python -m build` completes successfully from the repo root."
+  - "`pyproject.toml` defines a `[project]` table for `discripper` with name, version, description, authors, and `readme = \"README.md\"`, and configures `hatchling` in `[build-system]`."
+  - "`src/discripper/__init__.py` exists with a module docstring and exported `__all__`, and a `tests/__init__.py` file anchors the `tests/` package."
+  - "`python -m build` completes successfully from the repository root."
 evidence:
   expected:
+    - "pip install -e ."
+    - "ruff check ."
+    - "pytest -q --cov=src --cov-fail-under=80"
     - "python -m build"
   artifacts:
     - "pyproject.toml"
-    - "src/{PROJECT_SLUG}/__init__.py"
+    - "src/discripper/__init__.py"
+    - "tests/__init__.py"
 ---
 
 ## Context
-Set up the minimal Python packaging scaffold so later tasks can add code, configs, and entry points per the roadmap.
+Lay the packaging foundation so future tasks can add console hooks, configuration handling, and implementation modules without reworking project metadata.
 
 ## Plan
-- Create `pyproject.toml` with PEP 621 metadata for {PROJECT_SLUG} and build-system config.
-- Add `src/{PROJECT_SLUG}/__init__.py` and ensure `tests/` directory exists.
-- Verify `python -m build` succeeds against the new layout.
+- Create `pyproject.toml` with PEP 621 metadata for `discripper` and configure `hatchling` as the build backend.
+- Add `src/discripper/__init__.py` exporting a placeholder namespace and create `tests/__init__.py` to enable package-style tests.
+- Run `python -m build` plus the local gates to verify the project builds and tooling succeeds.

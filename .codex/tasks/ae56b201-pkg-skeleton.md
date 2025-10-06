@@ -7,21 +7,24 @@ phase_id: "P1-T3"
 depends_on:
   - 4a7d2c19
 acceptance:
-  - "`src/{PROJECT_SLUG}/cli.py` defines a `main()` callable that becomes the `{ENTRYPOINT}` target."
-  - "`src/{PROJECT_SLUG}/core/` package exists with `__init__.py` ready for future modules."
-  - "Import checks (`python -c "import {PROJECT_SLUG}; import {PROJECT_SLUG}.cli; import {PROJECT_SLUG}.core"`) succeed."
+  - "`src/discripper/cli.py` defines a `main()` callable that returns an exit code and will be wired to the console script."
+  - "`src/discripper/core/__init__.py` exists so the `discripper.core` namespace is importable for future modules."
+  - "`python -c \"import discripper; import discripper.cli; import discripper.core\"` succeeds without raising exceptions."
 evidence:
   expected:
-    - "python -c \"import {PROJECT_SLUG}; import {PROJECT_SLUG}.cli; import {PROJECT_SLUG}.core\""
+    - "pip install -e ."
+    - "ruff check ."
+    - "pytest -q --cov=src --cov-fail-under=80"
+    - "python -c \"import discripper; import discripper.cli; import discripper.core\""
   artifacts:
-    - "src/{PROJECT_SLUG}/cli.py"
-    - "src/{PROJECT_SLUG}/core/__init__.py"
+    - "src/discripper/cli.py"
+    - "src/discripper/core/__init__.py"
 ---
 
 ## Context
-Lay down the base modules and namespaces so subsequent tasks can flesh out CLI and core logic without worrying about package wiring.
+Establish the CLI module and core package namespaces so later tasks can focus on business logic rather than scaffolding.
 
 ## Plan
-- Add CLI module with placeholder `main()` returning a non-error status or message.
-- Create `core` package directory with `__init__.py` prepared for future exports.
-- Smoke-test imports to confirm the namespace is wired correctly.
+- Implement a placeholder `main()` function in `src/discripper/cli.py` that coordinates with the console script entry point.
+- Create the `src/discripper/core/` package with `__init__.py` exporting a stub to anchor future components.
+- Run the local gates and a manual import smoke test to confirm the package skeleton is wired correctly.
