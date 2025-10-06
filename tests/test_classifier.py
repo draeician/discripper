@@ -116,3 +116,13 @@ def test_classify_disc_logs_warning_on_ambiguous_disc(caplog):
     warnings = [record for record in caplog.records if record.levelno == logging.WARNING]
     assert warnings, "Expected a warning when falling back to movie classification"
     assert "Ambiguous disc structure" in warnings[0].message
+
+
+def test_classify_disc_ambiguous_fixture_defaults_to_movie():
+    disc = inspect_from_fixture("ambiguous_disc")
+
+    result = classify_disc(disc)
+
+    assert result.disc_type == "movie"
+    assert result.episodes == (disc.titles[0],)
+    assert result.episode_codes == ()

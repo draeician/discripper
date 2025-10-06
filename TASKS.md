@@ -41,7 +41,7 @@
 - [x] Default to movie on ambiguous structure with warning (log explains heuristic) [#P4-T4]
 - [x] Unit tests: movie-only disc fixture (classifier selects main title) [#P4-T5]
 - [x] Unit tests: 6-episode fixture (classifier detects series, counts episodes) [#P4-T6]
-- [ ] Unit tests: borderline/ambiguous fixture (falls back to movie) [#P4-T7]
+- [x] Unit tests: borderline/ambiguous fixture (falls back to movie) [#P4-T7]
 
 ## Phase 5 – Execution / Ripping Pipeline
 - [ ] Implement `rip_title(device, title_info, dest_path, *, dry_run=False)` (returns success plan) [#P5-T1]
