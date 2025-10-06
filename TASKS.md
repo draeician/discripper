@@ -26,7 +26,7 @@
 - [x] `{ENTRYPOINT} --help` shows usage and options (help includes flags/args) [#P2-T7]
 
 ## Phase 3 – Core Inspection / Input Acquisition
-- [ ] Define dataclasses `DiscInfo`, `TitleInfo` (fields for label, titles, chapters, durations) [#P3-T1]
+- [x] Define dataclasses `DiscInfo`, `TitleInfo` (fields for label, titles, chapters, durations) [#P3-T1]
 - [ ] Implement tool discovery for `lsdvd`, `ffprobe`, and Blu-ray inspector (detect availability) [#P3-T2]
 - [ ] Implement DVD inspector adapter using `lsdvd` where available (parses durations/titles) [#P3-T3]
 - [ ] Implement fallback inspector using `ffprobe` on device (best-effort title/duration extraction) [#P3-T4]
