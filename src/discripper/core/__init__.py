@@ -14,6 +14,7 @@ from .discovery import (
     discover_inspection_tools,
 )
 from .dvd import inspect_dvd
+from .fake import inspect_from_fixture
 from .ffprobe import inspect_with_ffprobe
 
 __all__ = [
@@ -27,6 +28,7 @@ __all__ = [
     "inspect_dvd",
     "inspect_blu_ray",
     "inspect_with_ffprobe",
+    "inspect_from_fixture",
     "__version__",
 ]
 

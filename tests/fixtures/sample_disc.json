@@ -1,0 +1,22 @@
+{
+  "label": "Sample Disc",
+  "titles": [
+    {
+      "label": "Pilot",
+      "duration": "01:30:00",
+      "chapters": [
+        "00:30:00",
+        "00:30:00",
+        "00:30:00"
+      ]
+    },
+    {
+      "duration": 2700,
+      "chapters": [
+        900,
+        900,
+        900
+      ]
+    }
+  ]
+}
