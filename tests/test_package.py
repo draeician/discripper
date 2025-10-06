@@ -15,17 +15,23 @@ def test_version_is_string() -> None:
     assert discripper.__version__ != ""
 
 
-def test_cli_main_prints_placeholder(tmp_path, capsys) -> None:
-    """The CLI main function prints the placeholder usage text."""
+def test_cli_main_errors_without_inspection_tools(tmp_path, monkeypatch, capsys) -> None:
+    """The CLI reports a helpful error when no inspection tools are available."""
 
     device = tmp_path / "device"
     device.write_text("ready", encoding="utf-8")
 
+    monkeypatch.setattr(
+        cli,
+        "discover_inspection_tools",
+        lambda: core.InspectionTools(dvd=None, fallback=None, blu_ray=None),
+    )
+
     exit_code = cli.main([str(device)])
     captured = capsys.readouterr()
 
-    assert exit_code == 0
-    assert "Usage: discripper" in captured.out
+    assert exit_code == 1
+    assert "No supported inspection tools" in captured.err
 
 
 def test_core_version_is_exposed() -> None:

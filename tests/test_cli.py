@@ -3,18 +3,210 @@
 from __future__ import annotations
 
 import logging
+from datetime import timedelta
 from pathlib import Path
 
+import pytest
 import yaml
 
 from discripper import cli
-import pytest
+from discripper.core import (
+    ClassificationResult,
+    DiscInfo,
+    InspectionTools,
+    RipPlan,
+    TitleInfo,
+    ToolAvailability,
+)
 
 
 def _write_config(tmp_path: Path, content: dict[str, object]) -> Path:
     config_path = tmp_path / "config.yaml"
     config_path.write_text(yaml.safe_dump(content), encoding="utf-8")
     return config_path
+
+
+def _install_movie_pipeline(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+    *,
+    use_fallback: bool = False,
+    dry_run: bool = False,
+):
+    events: list[object] = []
+    title = TitleInfo(label="Main Feature", duration=timedelta(minutes=95))
+    disc = DiscInfo(label="Sample Disc", titles=(title,))
+    classification = ClassificationResult("movie", (title,))
+
+    tools = InspectionTools(
+        dvd=None if use_fallback else ToolAvailability("lsdvd", "/usr/bin/lsdvd"),
+        fallback=ToolAvailability("ffprobe", "/usr/bin/ffprobe") if use_fallback else None,
+        blu_ray=None,
+    )
+
+    def fake_discover() -> InspectionTools:
+        events.append(("discover", use_fallback))
+        return tools
+
+    monkeypatch.setattr(cli, "discover_inspection_tools", fake_discover)
+
+    if use_fallback:
+        def unexpected_dvd(*_args, **_kwargs):
+            raise AssertionError("DVD inspector should not be used when only fallback exists")
+
+        monkeypatch.setattr(cli, "inspect_dvd", unexpected_dvd)
+
+        def fake_inspect(device: str, *, tool: ToolAvailability) -> DiscInfo:
+            events.append(("inspect", tool.command))
+            return disc
+
+        monkeypatch.setattr(cli, "inspect_with_ffprobe", fake_inspect)
+    else:
+        def unexpected_ffprobe(*_args, **_kwargs):
+            raise AssertionError("Fallback inspector should not be used when DVD tool exists")
+
+        monkeypatch.setattr(cli, "inspect_with_ffprobe", unexpected_ffprobe)
+
+        def fake_inspect(device: str, *, tool: ToolAvailability) -> DiscInfo:
+            events.append(("inspect", tool.command))
+            return disc
+
+        monkeypatch.setattr(cli, "inspect_dvd", fake_inspect)
+
+    def fake_classify(disc_info: DiscInfo, *, thresholds) -> ClassificationResult:
+        events.append(("classify", disc_info.label))
+        return classification
+
+    monkeypatch.setattr(cli, "classify_disc", fake_classify)
+
+    def fake_movie_output_path(title_info: TitleInfo, config: dict[str, object]) -> Path:
+        events.append(("movie_output_path", title_info.label))
+        return tmp_path / "output.mp4"
+
+    monkeypatch.setattr(cli, "movie_output_path", fake_movie_output_path)
+
+    def unexpected_series_output_path(*_args, **_kwargs):
+        raise AssertionError("Series output path should not be used for movie classification")
+
+    monkeypatch.setattr(cli, "series_output_path", unexpected_series_output_path)
+
+    def fake_rip_disc(
+        device: str,
+        classification_value: ClassificationResult,
+        destination_factory,
+        *,
+        dry_run: bool,
+        which=None,
+    ) -> tuple[RipPlan, ...]:
+        events.append(("rip_disc", device, dry_run))
+        destination = destination_factory(classification_value.episodes[0], None)
+        plan = RipPlan(
+            device=device,
+            title=classification_value.episodes[0],
+            destination=Path(destination),
+            command=("echo", "rip"),
+            will_execute=not dry_run,
+        )
+        return (plan,)
+
+    monkeypatch.setattr(cli, "rip_disc", fake_rip_disc)
+
+    def fake_run(plan: RipPlan):
+        events.append(("run_rip_plan", plan.destination))
+        if plan.will_execute and dry_run:
+            raise AssertionError("Plan should respect dry-run flag")
+        return None
+
+    monkeypatch.setattr(cli, "run_rip_plan", fake_run)
+
+    return events
+
+
+def _install_series_pipeline(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
+    events: list[object] = []
+    title_one = TitleInfo(label="Episode One", duration=timedelta(minutes=44))
+    title_two = TitleInfo(label="Episode Two", duration=timedelta(minutes=45))
+    disc = DiscInfo(label="Sample Series", titles=(title_one, title_two))
+    classification = ClassificationResult(
+        "series",
+        (title_one, title_two),
+        ("s01e01", "s01e02"),
+    )
+
+    tools = InspectionTools(
+        dvd=ToolAvailability("lsdvd", "/usr/bin/lsdvd"),
+        fallback=None,
+        blu_ray=None,
+    )
+
+    def fake_discover() -> InspectionTools:
+        events.append(("discover", "series"))
+        return tools
+
+    monkeypatch.setattr(cli, "discover_inspection_tools", fake_discover)
+
+    def fake_inspect(device: str, *, tool: ToolAvailability) -> DiscInfo:
+        events.append(("inspect", tool.command))
+        return disc
+
+    monkeypatch.setattr(cli, "inspect_dvd", fake_inspect)
+
+    def fake_classify(disc_info: DiscInfo, *, thresholds) -> ClassificationResult:
+        events.append(("classify", disc_info.label))
+        return classification
+
+    monkeypatch.setattr(cli, "classify_disc", fake_classify)
+
+    def unexpected_movie_output_path(*_args, **_kwargs):
+        raise AssertionError("Movie output path should not be used for series classification")
+
+    monkeypatch.setattr(cli, "movie_output_path", unexpected_movie_output_path)
+
+    def fake_series_output_path(
+        series_label: str,
+        title_info: TitleInfo,
+        episode_code: str,
+        config: dict[str, object],
+    ) -> Path:
+        events.append(("series_output_path", series_label, episode_code, title_info.label))
+        return tmp_path / f"{episode_code}_{title_info.label}.mp4"
+
+    monkeypatch.setattr(cli, "series_output_path", fake_series_output_path)
+
+    def fake_rip_disc(
+        device: str,
+        classification_value: ClassificationResult,
+        destination_factory,
+        *,
+        dry_run: bool,
+        which=None,
+    ) -> tuple[RipPlan, ...]:
+        events.append(("rip_disc", device, dry_run))
+        plans: list[RipPlan] = []
+        for title_info, episode_code in zip(
+            classification_value.episodes, classification_value.episode_codes
+        ):
+            destination = destination_factory(title_info, episode_code)
+            plans.append(
+                RipPlan(
+                    device=device,
+                    title=title_info,
+                    destination=Path(destination),
+                    command=("echo", episode_code),
+                    will_execute=not dry_run,
+                )
+            )
+        return tuple(plans)
+
+    monkeypatch.setattr(cli, "rip_disc", fake_rip_disc)
+
+    def fake_run(plan: RipPlan):
+        events.append(("run_rip_plan", plan.destination, plan.command[-1]))
+        return None
+
+    monkeypatch.setattr(cli, "run_rip_plan", fake_run)
+
+    return events
 
 
 def test_parse_arguments_supports_expected_flags() -> None:
@@ -132,11 +324,13 @@ def test_cli_main_help_output_lists_expected_options(capsys) -> None:
     assert "--dry-run" in captured
 
 
-def test_main_configures_info_logging_by_default(tmp_path) -> None:
+def test_main_configures_info_logging_by_default(tmp_path, monkeypatch) -> None:
     """INFO logging is enabled when --verbose is not supplied."""
 
     device = tmp_path / "device"
     device.write_text("ready", encoding="utf-8")
+
+    _install_movie_pipeline(monkeypatch, tmp_path)
 
     logging.basicConfig(level=logging.NOTSET, force=True)
     try:
@@ -147,11 +341,13 @@ def test_main_configures_info_logging_by_default(tmp_path) -> None:
         logging.basicConfig(level=logging.NOTSET, force=True)
 
 
-def test_main_configures_debug_logging_with_verbose(tmp_path) -> None:
+def test_main_configures_debug_logging_with_verbose(tmp_path, monkeypatch) -> None:
     """DEBUG logging is enabled when --verbose is provided."""
 
     device = tmp_path / "device"
     device.write_text("ready", encoding="utf-8")
+
+    _install_movie_pipeline(monkeypatch, tmp_path)
 
     logging.basicConfig(level=logging.NOTSET, force=True)
     try:
@@ -160,6 +356,103 @@ def test_main_configures_debug_logging_with_verbose(tmp_path) -> None:
         assert logging.getLogger().getEffectiveLevel() == logging.DEBUG
     finally:
         logging.basicConfig(level=logging.NOTSET, force=True)
+
+
+def test_main_executes_pipeline(monkeypatch, tmp_path) -> None:
+    """The CLI orchestrates discovery, inspection, planning, and ripping."""
+
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
+
+    events = _install_movie_pipeline(monkeypatch, tmp_path)
+
+    exit_code = cli.main([str(device)])
+
+    assert exit_code == 0
+    assert events == [
+        ("discover", False),
+        ("inspect", "lsdvd"),
+        ("classify", "Sample Disc"),
+        ("rip_disc", str(device), False),
+        ("movie_output_path", "Main Feature"),
+        ("run_rip_plan", tmp_path / "output.mp4"),
+    ]
+
+
+def test_main_uses_fallback_inspector_when_dvd_missing(monkeypatch, tmp_path) -> None:
+    """When :command:`lsdvd` is unavailable, the CLI falls back to ffprobe."""
+
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
+
+    events = _install_movie_pipeline(monkeypatch, tmp_path, use_fallback=True)
+
+    exit_code = cli.main([str(device)])
+
+    assert exit_code == 0
+    assert ("inspect", "ffprobe") in events
+
+
+def test_main_honors_dry_run_flag(monkeypatch, tmp_path) -> None:
+    """The CLI propagates the dry-run flag down to the ripping plans."""
+
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
+
+    events = _install_movie_pipeline(monkeypatch, tmp_path, dry_run=True)
+
+    exit_code = cli.main(["--dry-run", str(device)])
+
+    assert exit_code == 0
+    assert ("rip_disc", str(device), True) in events
+
+
+def test_main_uses_series_output_paths_for_series_classification(
+    monkeypatch, tmp_path
+) -> None:
+    """Series classifications use the series naming helpers for destinations."""
+
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
+
+    events = _install_series_pipeline(monkeypatch, tmp_path)
+
+    exit_code = cli.main([str(device)])
+
+    assert exit_code == 0
+    assert (
+        "series_output_path",
+        "Sample Series",
+        "s01e01",
+        "Episode One",
+    ) in events
+    assert (
+        "series_output_path",
+        "Sample Series",
+        "s01e02",
+        "Episode Two",
+    ) in events
+    run_events = [event for event in events if event[0] == "run_rip_plan"]
+    assert [entry[2] for entry in run_events] == ["s01e01", "s01e02"]
+
+
+def test_main_errors_when_no_inspection_tools(monkeypatch, tmp_path, capsys) -> None:
+    """A helpful error is shown when neither lsdvd nor ffprobe are available."""
+
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
+
+    def fake_discover() -> InspectionTools:
+        return InspectionTools(dvd=None, fallback=None, blu_ray=None)
+
+    monkeypatch.setattr(cli, "discover_inspection_tools", fake_discover)
+
+    exit_code = cli.main([str(device)])
+
+    assert exit_code == 1
+
+    captured = capsys.readouterr()
+    assert "No supported inspection tools" in captured.err
 
 
 def test_main_errors_when_device_missing(capsys) -> None:
