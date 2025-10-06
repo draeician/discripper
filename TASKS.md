@@ -72,7 +72,7 @@
 - [x] Add fixtures: multi-episode disc JSON (6 episodes) (file present) [#P8-T2]
 - [x] Add fixtures: ambiguous structure JSON (borderline durations) (file present) [#P8-T3]
 - [x] Tests: config precedence (defaults/config/CLI) (pytest passes) [#P8-T4]
-- [ ] Tests: classification across all fixtures (pass; deterministic) [#P8-T5]
+- [x] Tests: classification across all fixtures (pass; deterministic) [#P8-T5]
 - [ ] Tests: naming sanitization & lowercase options (pass) [#P8-T6]
 - [ ] Tests: dry-run planning prints expected actions (pass) [#P8-T7]
 - [ ] Tests: exit code mapping for common failures (pass) [#P8-T8]
