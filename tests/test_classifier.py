@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 
 from discripper.core import (
@@ -65,3 +66,22 @@ def test_classify_disc_threshold_overrides_from_config():
     assert result.disc_type == "movie"
     assert result.episodes == (episode_titles[2],)
     assert result.episode_codes == ()
+
+
+def test_classify_disc_logs_warning_on_ambiguous_disc(caplog):
+    ambiguous_titles = (
+        TitleInfo(label="Feature", duration=timedelta(minutes=50)),
+        TitleInfo(label="Bonus", duration=timedelta(minutes=10)),
+        TitleInfo(label="Trailer", duration=timedelta(minutes=5)),
+    )
+    disc = DiscInfo(label="Ambiguous Disc", titles=ambiguous_titles)
+
+    with caplog.at_level(logging.WARNING):
+        result = classify_disc(disc)
+
+    assert result.disc_type == "movie"
+    assert result.episodes == (ambiguous_titles[0],)
+
+    warnings = [record for record in caplog.records if record.levelno == logging.WARNING]
+    assert warnings, "Expected a warning when falling back to movie classification"
+    assert "Ambiguous disc structure" in warnings[0].message
