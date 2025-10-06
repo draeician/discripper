@@ -436,6 +436,34 @@ def test_main_uses_series_output_paths_for_series_classification(
     assert [entry[2] for entry in run_events] == ["s01e01", "s01e02"]
 
 
+def test_main_logs_structured_classification_summary(monkeypatch, tmp_path) -> None:
+    """Classification results are emitted as structured log messages."""
+
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
+
+    _install_series_pipeline(monkeypatch, tmp_path)
+
+    messages: list[str] = []
+
+    class _RecordingHandler(logging.Handler):
+        def emit(self, record: logging.LogRecord) -> None:  # pragma: no cover - simple
+            messages.append(record.getMessage())
+
+    handler: logging.Handler = _RecordingHandler(level=logging.INFO)
+    cli.logger.addHandler(handler)
+    try:
+        exit_code = cli.main([str(device)])
+    finally:
+        cli.logger.removeHandler(handler)
+
+    assert exit_code == 0
+    assert (
+        "EVENT=CLASSIFIED TYPE=series EPISODES=2 LABEL=\"Sample Series\""
+        in messages
+    )
+
+
 def test_main_errors_when_no_inspection_tools(monkeypatch, tmp_path, capsys) -> None:
     """A helpful error is shown when neither lsdvd nor ffprobe are available."""
 
