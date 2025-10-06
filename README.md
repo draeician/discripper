@@ -98,6 +98,26 @@ settings.
 
 `discripper` inspects the provided optical device, classifies the contents, and plans rips into the configured output directory (default: `~/Videos`). The CLI exposes a consistent workflow for both movies and series.
 
+### CLI help
+
+Inspect the built-in help to review all supported flags and arguments:
+
+```console
+$ discripper --help
+usage: discripper [-h] [--config CONFIG_PATH] [--verbose] [--dry-run] [device]
+
+discripper command-line interface
+
+positional arguments:
+  device                Path to the optical media device (default: /dev/sr0).
+
+options:
+  -h, --help            show this help message and exit
+  --config CONFIG_PATH  Path to the configuration file to use.
+  --verbose             Enable verbose (DEBUG) logging output.
+  --dry-run             Perform a dry run without executing side effects.
+```
+
 ### Movie workflow
 
 Insert the disc and run:

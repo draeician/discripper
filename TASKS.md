@@ -88,7 +88,7 @@
 - [x] Root `README.md`: prerequisites (apt tools), install, usage (movie & series), dry-run (sections present) [#P10-T1]
 - [x] Document config schema and `{CONFIG_PATH}` override (examples provided) [#P10-T2]
 - [x] Troubleshooting section: common errors & resolutions (page anchors added) [#P10-T3]
-- [ ] CLI `--help` examples included in docs (copy/paste verified) [#P10-T4]
+- [x] CLI `--help` examples included in docs (copy/paste verified) [#P10-T4]
 
 ## Phase 11 – Simulation / E2E Dry-Run
 - [ ] Hidden flag `--simulate FIXTURE.json` drives full pipeline without hardware (flag works) [#P11-T1]
