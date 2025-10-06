@@ -1,8 +1,34 @@
 {
   "label": "Borderline Feature",
   "titles": [
-    {"label": "Feature", "duration": "00:58:00"},
-    {"label": "Short Episode", "duration": "00:30:00"},
-    {"label": "Bonus", "duration": "00:12:00"}
+    {
+      "label": "Borderline Feature",
+      "duration": "00:59:30",
+      "chapters": [
+        "00:20:00",
+        "00:19:45",
+        "00:19:45"
+      ]
+    },
+    {
+      "label": "Extended Cut",
+      "duration": "00:52:00",
+      "chapters": [
+        "00:26:00",
+        "00:26:00"
+      ]
+    },
+    {
+      "label": "Behind the Scenes",
+      "duration": "00:22:00",
+      "chapters": [
+        "00:11:00",
+        "00:11:00"
+      ]
+    },
+    {
+      "label": "Trailer Reel",
+      "duration": "00:05:00"
+    }
   ]
 }
