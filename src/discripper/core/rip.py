@@ -6,8 +6,9 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from os import fspath
 from pathlib import Path
+from shutil import which as default_which
 from subprocess import CompletedProcess, run as subprocess_run
-from typing import TYPE_CHECKING, Optional, Tuple, Any
+from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 if TYPE_CHECKING:  # pragma: no cover - import for type checking only
     from . import ClassificationResult, TitleInfo
@@ -24,12 +25,55 @@ class RipPlan:
     will_execute: bool
 
 
+def _ffmpeg_command(device: str, destination: Path) -> Tuple[str, ...]:
+    return (
+        "ffmpeg",
+        "-hide_banner",
+        "-loglevel",
+        "error",
+        "-i",
+        device,
+        str(destination),
+    )
+
+
+def _dvdbackup_command(device: str, title_info: "TitleInfo", destination: Path) -> Tuple[str, ...]:
+    output_dir = destination.parent
+    label = destination.stem or title_info.label or "title"
+    return (
+        "dvdbackup",
+        "-i",
+        device,
+        "-o",
+        str(output_dir),
+        "-n",
+        label,
+        "-F",
+    )
+
+
+def _select_rip_command(
+    device: str,
+    title_info: "TitleInfo",
+    destination: Path,
+    which: Callable[[str], Optional[str]],
+) -> Tuple[str, ...]:
+    if which("dvdbackup"):
+        return _dvdbackup_command(device, title_info, destination)
+
+    if which("ffmpeg"):
+        return _ffmpeg_command(device, destination)
+
+    raise RuntimeError("No supported ripping tools found on PATH")
+
+
 def rip_title(
     device: str | Path,
     title_info: "TitleInfo",
     dest_path: str | Path,
     *,
     dry_run: bool = False,
+    which: Callable[[str], Optional[str]] = default_which,
 ) -> RipPlan:
     """Return the rip plan for ``title_info`` from ``device`` to ``dest_path``.
 
@@ -41,15 +85,7 @@ def rip_title(
     device_path = fspath(device)
     destination = Path(dest_path)
 
-    command = (
-        "ffmpeg",
-        "-hide_banner",
-        "-loglevel",
-        "error",
-        "-i",
-        device_path,
-        str(destination),
-    )
+    command = _select_rip_command(device_path, title_info, destination, which)
 
     return RipPlan(
         device=device_path,
@@ -65,12 +101,13 @@ def run_rip_plan(
     *,
     run: Callable[..., CompletedProcess[Any]] = subprocess_run,
 ) -> Optional[CompletedProcess[Any]]:
-    """Execute *plan* using :command:`ffmpeg`.
+    """Execute *plan* using the configured external command.
 
-    The :class:`RipPlan` returned by :func:`rip_title` describes an ``ffmpeg``
-    invocation that reads from a device node and writes an MP4 file.  This
+    The :class:`RipPlan` returned by :func:`rip_title` describes a full command
+    tuple that reads from the optical device and writes to the destination.  This
     helper runs that command by delegating to :func:`subprocess.run` with
-    ``check=True`` so callers receive an exception when ``ffmpeg`` fails.
+    ``check=True`` so callers receive an exception when the external tool
+    reports a failure.
 
     When ``plan.will_execute`` is :data:`False` (e.g., for ``--dry-run``), the
     function does nothing and returns :data:`None`.
@@ -88,6 +125,7 @@ def rip_disc(
     destination_factory: Callable[["TitleInfo", str | None], str | Path],
     *,
     dry_run: bool = False,
+    which: Callable[[str], Optional[str]] = default_which,
 ) -> Tuple[RipPlan, ...]:
     """Return rip plans for all titles selected by *classification*.
 
@@ -108,6 +146,14 @@ def rip_disc(
     plans = []
     for title, code in zip(episodes, episode_codes):
         destination = destination_factory(title, code)
-        plans.append(rip_title(device, title, destination, dry_run=dry_run))
+        plans.append(
+            rip_title(
+                device,
+                title,
+                destination,
+                dry_run=dry_run,
+                which=which,
+            )
+        )
 
     return tuple(plans)
