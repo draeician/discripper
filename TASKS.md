@@ -91,7 +91,7 @@
 - [x] CLI `--help` examples included in docs (copy/paste verified) [#P10-T4]
 
 ## Phase 11 – Simulation / E2E Dry-Run
-- [ ] Hidden flag `--simulate FIXTURE.json` drives full pipeline without hardware (flag works) [#P11-T1]
+- [x] Hidden flag `--simulate FIXTURE.json` drives full pipeline without hardware (flag works) [#P11-T1]
 - [ ] Provide two sample simulation JSONs (movie, series) (files included) [#P11-T2]
 - [ ] `scripts/demo.sh` shows planning & dry-run with simulate (script runs clean) [#P11-T3]
 

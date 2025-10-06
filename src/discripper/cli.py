@@ -22,6 +22,7 @@ from .core import (
     classify_disc,
     discover_inspection_tools,
     inspect_dvd,
+    inspect_from_fixture,
     inspect_with_ffprobe,
     movie_output_path,
     rip_disc,
@@ -146,6 +147,12 @@ def build_argument_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Perform a dry run without executing side effects.",
     )
+    parser.add_argument(
+        "--simulate",
+        dest="simulate",
+        metavar="FIXTURE",
+        help=argparse.SUPPRESS,
+    )
     return parser
 
 
@@ -188,6 +195,9 @@ def resolve_cli_config(args: argparse.Namespace) -> dict[str, Any]:
 
     config["device"] = args.device
 
+    if getattr(args, "simulate", None):
+        config["simulate"] = args.simulate
+
     if args.verbose:
         config.setdefault("logging", {})["level"] = "DEBUG"
 
@@ -221,27 +231,41 @@ def _run_main(argv: Sequence[str] | None = None) -> int:
     config = resolve_cli_config(args)
     configure_logging(config)
 
-    device_path = config.get("device")
-    if not _is_readable_device(device_path):
-        path_display = str(device_path) if device_path is not None else "<unknown>"
-        _print_error(
-            "device path "
-            f"'{path_display}' not found or unreadable. Check that the disc is inserted "
-            "and the device path is correct."
-        )
-        return EXIT_DISC_NOT_DETECTED
+    simulate_fixture = config.get("simulate")
 
-    device = str(Path(str(device_path)).expanduser())
+    disc: DiscInfo
+    if simulate_fixture:
+        try:
+            disc = inspect_from_fixture(simulate_fixture)
+        except Exception as exc:  # pragma: no cover - defensive
+            _print_error(f"Failed to load simulation fixture: {exc}")
+            return EXIT_DISC_NOT_DETECTED
 
-    try:
-        tools = discover_inspection_tools()
-        disc = _inspect_disc(device, tools)
-    except BluRayNotSupportedError as exc:
-        _print_error(str(exc))
-        return EXIT_DISC_NOT_DETECTED
-    except Exception as exc:  # pragma: no cover - defensive
-        _print_error(f"Failed to inspect disc: {exc}")
-        return EXIT_DISC_NOT_DETECTED
+        config["dry_run"] = True
+        device = f"simulate:{Path(simulate_fixture).name}"
+        config["device"] = device
+    else:
+        device_path = config.get("device")
+        if not _is_readable_device(device_path):
+            path_display = str(device_path) if device_path is not None else "<unknown>"
+            _print_error(
+                "device path "
+                f"'{path_display}' not found or unreadable. Check that the disc is inserted "
+                "and the device path is correct."
+            )
+            return EXIT_DISC_NOT_DETECTED
+
+        device = str(Path(str(device_path)).expanduser())
+
+        try:
+            tools = discover_inspection_tools()
+            disc = _inspect_disc(device, tools)
+        except BluRayNotSupportedError as exc:
+            _print_error(str(exc))
+            return EXIT_DISC_NOT_DETECTED
+        except Exception as exc:  # pragma: no cover - defensive
+            _print_error(f"Failed to inspect disc: {exc}")
+            return EXIT_DISC_NOT_DETECTED
 
     thresholds = thresholds_from_config(config)
     classification = classify_disc(disc, thresholds=thresholds)
