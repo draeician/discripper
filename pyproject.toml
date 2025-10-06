@@ -52,3 +52,6 @@ select = ["E", "F"]
 [tool.pytest.ini_options]
 addopts = "-q --cov=src --cov-fail-under=80"
 pythonpath = ["src"]
+markers = [
+    "slow: tests that exercise installation flows and may take longer to run",
+]
