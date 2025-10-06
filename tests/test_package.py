@@ -2,6 +2,7 @@
 
 import discripper
 from discripper import cli
+from discripper import core
 
 
 def test_version_is_string() -> None:
@@ -19,3 +20,10 @@ def test_cli_main_prints_placeholder(capsys) -> None:
 
     assert exit_code == 0
     assert "Usage: discripper" in captured.out
+
+
+def test_core_version_is_exposed() -> None:
+    """The core package exposes a placeholder version string."""
+
+    assert isinstance(core.__version__, str)
+    assert core.__version__ != ""
