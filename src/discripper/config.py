@@ -28,6 +28,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     },
     "logging": {
         "level": "INFO",
+        "file": None,
     },
 }
 
@@ -49,6 +50,7 @@ CONFIG_SCHEMA: dict[str, Any] = {
     },
     "logging": {
         "level": (str, int),
+        "file": (str, type(None)),
     },
 }
 

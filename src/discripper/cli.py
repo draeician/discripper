@@ -191,6 +191,11 @@ def build_argument_parser() -> argparse.ArgumentParser:
         help="Perform a dry run without executing side effects.",
     )
     parser.add_argument(
+        "--log-file",
+        dest="log_file",
+        help="Path to a file where logs should also be written.",
+    )
+    parser.add_argument(
         "--simulate",
         dest="simulate",
         metavar="FIXTURE",
@@ -224,11 +229,31 @@ def configure_logging(config: Mapping[str, Any]) -> None:
     """Configure the root logger based on the provided *config*."""
 
     level_value = None
+    file_value: str | None = None
     logging_config = config.get("logging")
     if isinstance(logging_config, Mapping):
         level_value = logging_config.get("level")
+        file_candidate = logging_config.get("file")
+        if isinstance(file_candidate, str) or file_candidate is None:
+            file_value = file_candidate
 
-    logging.basicConfig(level=_resolve_log_level(level_value), force=True)
+    handlers: list[logging.Handler] = [logging.StreamHandler()]
+    if file_value:
+        file_path = Path(file_value).expanduser()
+        try:
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            file_handler = logging.FileHandler(file_path, encoding="utf-8")
+        except OSError as exc:  # pragma: no cover - filesystem errors are rare
+            raise RuntimeError(
+                f"Failed to configure log file '{file_path}': {exc}"
+            ) from exc
+        handlers.append(file_handler)
+
+    logging.basicConfig(
+        level=_resolve_log_level(level_value),
+        handlers=handlers,
+        force=True,
+    )
 
 
 def resolve_cli_config(args: argparse.Namespace) -> dict[str, Any]:
@@ -243,6 +268,9 @@ def resolve_cli_config(args: argparse.Namespace) -> dict[str, Any]:
 
     if args.verbose:
         config.setdefault("logging", {})["level"] = "DEBUG"
+
+    if getattr(args, "log_file", None) is not None:
+        config.setdefault("logging", {})["file"] = args.log_file
 
     if args.dry_run:
         config["dry_run"] = True

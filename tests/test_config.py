@@ -28,6 +28,19 @@ def test_load_config_overrides_defaults(tmp_path: Path) -> None:
     assert loaded["naming"]["separator"] == config.DEFAULT_CONFIG["naming"]["separator"]
 
 
+def test_load_config_respects_logging_file(tmp_path: Path) -> None:
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        "logging:\n" "  level: DEBUG\n" "  file: /var/log/discripper.log\n",
+        encoding="utf-8",
+    )
+
+    loaded = config.load_config(config_file)
+
+    assert loaded["logging"]["level"] == "DEBUG"
+    assert loaded["logging"]["file"] == "/var/log/discripper.log"
+
+
 def test_load_config_rejects_non_mapping(tmp_path: Path) -> None:
     config_file = tmp_path / "config.yaml"
     config_file.write_text("[]")

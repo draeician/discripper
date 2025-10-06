@@ -214,13 +214,23 @@ def _install_series_pipeline(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
 
 
 def test_parse_arguments_supports_expected_flags() -> None:
-    """The CLI parser recognises the config, verbose, and dry-run flags."""
+    """The CLI parser recognises the config, verbose, dry-run, and log-file flags."""
 
-    args = cli.parse_arguments(["--config", "example.yaml", "--verbose", "--dry-run"])
+    args = cli.parse_arguments(
+        [
+            "--config",
+            "example.yaml",
+            "--verbose",
+            "--dry-run",
+            "--log-file",
+            "cli.log",
+        ]
+    )
 
     assert args.config_path == "example.yaml"
     assert args.verbose is True
     assert args.dry_run is True
+    assert args.log_file == "cli.log"
 
 
 def test_parse_arguments_supports_simulate_flag(tmp_path) -> None:
@@ -298,19 +308,43 @@ def test_resolve_cli_config_applies_precedence(tmp_path) -> None:
         tmp_path,
         {
             "output_directory": "/mnt/custom",
-            "logging": {"level": "WARNING"},
+            "logging": {"level": "WARNING", "file": str(tmp_path / "config.log")},
             "dry_run": False,
         },
     )
 
     args = cli.parse_arguments(
-        ["--config", str(config_path), "--verbose", "--dry-run"]
+        [
+            "--config",
+            str(config_path),
+            "--verbose",
+            "--dry-run",
+            "--log-file",
+            str(tmp_path / "cli.log"),
+        ]
     )
     resolved = cli.resolve_cli_config(args)
 
     assert resolved["output_directory"] == "/mnt/custom"
     assert resolved["logging"]["level"] == "DEBUG"
     assert resolved["dry_run"] is True
+    assert resolved["logging"]["file"] == str(tmp_path / "cli.log")
+
+
+def test_resolve_cli_config_overrides_log_file_with_flag(tmp_path) -> None:
+    """--log-file takes precedence over any configured log file path."""
+
+    config_path = _write_config(
+        tmp_path,
+        {"logging": {"level": "INFO", "file": str(tmp_path / "config.log")}},
+    )
+
+    args = cli.parse_arguments(
+        ["--config", str(config_path), "--log-file", str(tmp_path / "cli.log")]
+    )
+    resolved = cli.resolve_cli_config(args)
+
+    assert resolved["logging"]["file"] == str(tmp_path / "cli.log")
 
 
 def test_resolve_cli_config_layers_defaults_config_cli(
@@ -326,12 +360,13 @@ def test_resolve_cli_config_layers_defaults_config_cli(
 
     assert resolved_defaults["output_directory"] == config_module.DEFAULT_CONFIG["output_directory"]
     assert resolved_defaults["dry_run"] is config_module.DEFAULT_CONFIG["dry_run"]
+    assert resolved_defaults["logging"]["file"] is None
 
     managed_config.write_text(
         yaml.safe_dump(
             {
                 "output_directory": "/mnt/config",
-                "logging": {"level": "WARNING"},
+                "logging": {"level": "WARNING", "file": str(tmp_path / "config.log")},
                 "dry_run": False,
             }
         ),
@@ -343,14 +378,16 @@ def test_resolve_cli_config_layers_defaults_config_cli(
 
     assert resolved_config["output_directory"] == "/mnt/config"
     assert resolved_config["logging"]["level"] == "WARNING"
+    assert resolved_config["logging"]["file"] == str(tmp_path / "config.log")
     assert resolved_config["dry_run"] is False
 
-    cli_args = cli.parse_arguments(["--verbose", "--dry-run"])
+    cli_args = cli.parse_arguments(["--verbose", "--dry-run", "--log-file", "cli.log"])
     resolved_cli = cli.resolve_cli_config(cli_args)
 
     assert resolved_cli["output_directory"] == "/mnt/config"
     assert resolved_cli["logging"]["level"] == "DEBUG"
     assert resolved_cli["dry_run"] is True
+    assert resolved_cli["logging"]["file"] == "cli.log"
 
 
 def test_cli_help_mentions_device_default() -> None:
@@ -375,6 +412,25 @@ def test_cli_main_help_output_lists_expected_options(capsys) -> None:
     assert "--config" in captured
     assert "--verbose" in captured
     assert "--dry-run" in captured
+    assert "--log-file" in captured
+
+
+def test_configure_logging_writes_to_file(tmp_path) -> None:
+    """configure_logging attaches a file handler when a path is supplied."""
+
+    log_path = tmp_path / "logs" / "discripper.log"
+    config = {"logging": {"level": "INFO", "file": str(log_path)}}
+
+    logging.basicConfig(level=logging.NOTSET, force=True)
+    try:
+        cli.configure_logging(config)
+        logging.getLogger().info("file logging active")
+        logging.shutdown()
+    finally:
+        logging.basicConfig(level=logging.NOTSET, force=True)
+
+    assert log_path.exists()
+    assert "file logging active" in log_path.read_text(encoding="utf-8")
 
 
 def test_main_configures_info_logging_by_default(tmp_path, monkeypatch) -> None:
