@@ -13,6 +13,7 @@ from .discovery import (
     discover_inspection_tools,
 )
 from .dvd import inspect_dvd
+from .ffprobe import inspect_with_ffprobe
 
 __all__ = [
     "DiscInfo",
@@ -22,6 +23,7 @@ __all__ = [
     "discover_inspection_tools",
     "BLURAY_INSPECTOR_CANDIDATES",
     "inspect_dvd",
+    "inspect_with_ffprobe",
     "__version__",
 ]
 
