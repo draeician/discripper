@@ -19,6 +19,20 @@ sudo apt install ffmpeg lsdvd dvdbackup
 * `lsdvd` supplies the primary DVD title/duration metadata.
 * `dvdbackup` is used when available to clone discs prior to transcoding.
 
+Use `lsdvd` to confirm the optical drive path before running `discripper`:
+
+```bash
+lsdvd -Oy -c /dev/sr0
+```
+
+Most Linux distributions expose the optical drive at `/dev/sr0`, but some utilities expect `/dev/dvd`. If `lsdvd` defaults to `/dev/dvd`, create a symlink that points to the actual device:
+
+```bash
+sudo ln -s /dev/sr0 /dev/dvd
+```
+
+`discripper` also accepts an explicit device argument, so you can pass a different path when launching the CLI (for example, `discripper /dev/sr1`).
+
 Blu-ray discs that require decryption or CSS-protected DVDs may need additional third-party tooling; `discripper` does not perform circumvention.
 
 ## Installation
