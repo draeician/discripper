@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import json
 from datetime import timedelta
 from pathlib import Path
 
@@ -221,6 +222,15 @@ def test_parse_arguments_supports_expected_flags() -> None:
     assert args.dry_run is True
 
 
+def test_parse_arguments_supports_simulate_flag(tmp_path) -> None:
+    """The CLI parser recognises the hidden --simulate option."""
+
+    fixture = tmp_path / "disc.json"
+    args = cli.parse_arguments(["--simulate", str(fixture)])
+
+    assert args.simulate == str(fixture)
+
+
 def test_parse_arguments_includes_device_with_default() -> None:
     """The parser exposes a device argument with the expected default value."""
 
@@ -398,6 +408,79 @@ def test_main_configures_debug_logging_with_verbose(tmp_path, monkeypatch) -> No
         assert logging.getLogger().getEffectiveLevel() == logging.DEBUG
     finally:
         logging.basicConfig(level=logging.NOTSET, force=True)
+
+
+def test_main_simulate_uses_fixture_and_forces_dry_run(tmp_path, monkeypatch) -> None:
+    """Simulation mode loads the fixture without touching the device."""
+
+    fixture = tmp_path / "simulation.json"
+    fixture.write_text(
+        json.dumps(
+            {
+                "label": "Simulated Disc",
+                "titles": [
+                    {
+                        "label": "Simulated Feature",
+                        "duration": 5400,
+                    }
+                ],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    events: list[object] = []
+
+    def unexpected_discover():
+        raise AssertionError("discover_inspection_tools should not run in simulation mode")
+
+    monkeypatch.setattr(cli, "discover_inspection_tools", unexpected_discover)
+
+    def fake_classify(disc_info: DiscInfo, *, thresholds) -> ClassificationResult:
+        events.append(("classify", disc_info.label))
+        return ClassificationResult("movie", disc_info.titles)
+
+    monkeypatch.setattr(cli, "classify_disc", fake_classify)
+
+    def fake_movie_output_path(title_info: TitleInfo, config: dict[str, object]) -> Path:
+        events.append(("movie_output_path", title_info.label))
+        return tmp_path / "output.mp4"
+
+    monkeypatch.setattr(cli, "movie_output_path", fake_movie_output_path)
+
+    def fake_rip_disc(
+        device: str,
+        classification_value: ClassificationResult,
+        destination_factory,
+        *,
+        dry_run: bool,
+        which=None,
+    ) -> tuple[RipPlan, ...]:
+        events.append(("rip_disc", device, dry_run))
+        destination = destination_factory(classification_value.episodes[0], None)
+        return (
+            RipPlan(
+                device=device,
+                title=classification_value.episodes[0],
+                destination=Path(destination),
+                command=("echo", "rip"),
+                will_execute=not dry_run,
+            ),
+        )
+
+    monkeypatch.setattr(cli, "rip_disc", fake_rip_disc)
+
+    def fake_run(plan: RipPlan):
+        events.append(("run_rip_plan", plan.destination))
+        return None
+
+    monkeypatch.setattr(cli, "run_rip_plan", fake_run)
+
+    exit_code = cli.main(["--simulate", str(fixture)])
+
+    assert exit_code == cli.EXIT_SUCCESS
+    assert ("classify", "Simulated Disc") in events
+    assert any(event[0] == "rip_disc" and event[2] is True for event in events)
 
 
 def test_main_executes_pipeline(monkeypatch, tmp_path) -> None:
