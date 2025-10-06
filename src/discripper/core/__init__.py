@@ -6,9 +6,20 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Tuple
 
+from .discovery import (
+    BLURAY_INSPECTOR_CANDIDATES,
+    InspectionTools,
+    ToolAvailability,
+    discover_inspection_tools,
+)
+
 __all__ = [
     "DiscInfo",
     "TitleInfo",
+    "InspectionTools",
+    "ToolAvailability",
+    "discover_inspection_tools",
+    "BLURAY_INSPECTOR_CANDIDATES",
     "__version__",
 ]
 
