@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import shlex
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -17,6 +18,20 @@ from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 if TYPE_CHECKING:  # pragma: no cover - import for type checking only
     from . import ClassificationResult, TitleInfo
+
+
+logger = logging.getLogger(__name__)
+
+
+def _log_rip_failure(plan: RipPlan, reason: str, exit_code: int) -> None:
+    """Emit a structured log entry describing a failed rip attempt."""
+
+    logger.error(
+        'EVENT=RIP_FAILED FILE="%s" EXIT_CODE=%d REASON="%s"',
+        plan.destination,
+        exit_code,
+        reason,
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -130,23 +145,49 @@ def run_rip_plan(
 
     if not plan.will_execute:
         print(f"[dry-run] Would execute: {shlex.join(plan.command)}")
+        logger.info('EVENT=RIP_SKIPPED FILE="%s" REASON=dry-run', plan.destination)
         return None
 
     plan.destination.parent.mkdir(parents=True, exist_ok=True)
 
     try:
-        return run(plan.command, check=True)
+        result = run(plan.command, check=True)
+
+        size_bytes: Optional[int]
+        try:
+            size_bytes = plan.destination.stat().st_size
+        except FileNotFoundError:
+            size_bytes = None
+        except OSError:
+            size_bytes = None
+
+        if size_bytes is not None:
+            logger.info(
+                'EVENT=RIP_DONE FILE="%s" BYTES=%d STATUS=success',
+                plan.destination,
+                size_bytes,
+            )
+        else:
+            logger.info(
+                'EVENT=RIP_DONE FILE="%s" BYTES=unknown STATUS=success',
+                plan.destination,
+            )
+
+        return result
     except FileNotFoundError as exc:  # pragma: no cover - defensive on Python <3.11
+        _log_rip_failure(plan, "tool-not-found", 2)
         raise RipExecutionError(
             f"Ripping tool '{plan.command[0]}' was not found on PATH.",
             exit_code=2,
         ) from exc
     except PermissionError as exc:
+        _log_rip_failure(plan, "permission-denied", 2)
         raise RipExecutionError(
             f"Permission denied while executing '{plan.command[0]}'.",
             exit_code=2,
         ) from exc
     except CalledProcessError as exc:
+        _log_rip_failure(plan, f"subprocess-exit-{exc.returncode}", 2)
         raise RipExecutionError(
             (
                 "Ripping command failed with exit code "
@@ -155,6 +196,7 @@ def run_rip_plan(
             exit_code=2,
         ) from exc
     except OSError as exc:  # pragma: no cover - generic OS error guard
+        _log_rip_failure(plan, exc.strerror or str(exc), 2)
         raise RipExecutionError(
             f"Unexpected I/O error executing '{plan.command[0]}': {exc.strerror or exc}.",
             exit_code=2,

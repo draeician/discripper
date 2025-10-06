@@ -175,7 +175,7 @@ def test_run_rip_plan_creates_parent_directories(tmp_path: Path, sample_title: T
 
 
 def test_run_rip_plan_skips_dry_run(
-    tmp_path: Path, sample_title: TitleInfo, capsys
+    tmp_path: Path, sample_title: TitleInfo, capsys, caplog
 ) -> None:
     plan = rip_title(
         tmp_path / "device.iso",
@@ -195,6 +195,28 @@ def test_run_rip_plan_skips_dry_run(
     captured = capsys.readouterr()
     assert "[dry-run] Would execute:" in captured.out
     assert str(plan.destination) in captured.out
+    assert any("EVENT=RIP_SKIPPED" in message for message in caplog.messages)
+
+
+def test_run_rip_plan_logs_success(tmp_path: Path, sample_title: TitleInfo, caplog) -> None:
+    plan = rip_title(
+        tmp_path / "device.iso",
+        sample_title,
+        tmp_path / "out.mp4",
+        which=_ffmpeg_only,
+    )
+
+    def fake_run(command: tuple[str, ...], check: bool) -> CompletedProcess[str]:
+        destination = plan.destination
+        destination.write_bytes(b"data")
+        return CompletedProcess(command, 0)
+
+    with caplog.at_level("INFO"):
+        result = run_rip_plan(plan, run=fake_run)
+
+    assert isinstance(result, CompletedProcess)
+    assert any("EVENT=RIP_DONE" in message for message in caplog.messages)
+    assert any("BYTES=4" in message for message in caplog.messages)
 
 
 def test_run_rip_plan_maps_called_process_error(
