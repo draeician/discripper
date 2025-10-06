@@ -48,7 +48,7 @@
 - [x] Implement `rip_disc(...)` orchestrator for movie & series flows (iterates titles) [#P5-T2]
 - [x] Implement `ffmpeg`-based basic ripping path (document constraints) (ffmpeg path works) [#P5-T3]
 - [x] Detect and use `dvdbackup`/other tools if available (choose simplest successful path) [#P5-T4]
-- [ ] Handle I/O errors with clear messages and non-zero exit codes (errors mapped) [#P5-T5]
+- [x] Handle I/O errors with clear messages and non-zero exit codes (errors mapped) [#P5-T5]
 - [ ] `--dry-run` prints plan only; performs no writes (no file side-effects) [#P5-T6]
 
 ## Phase 6 – Naming & Organization

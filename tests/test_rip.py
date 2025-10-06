@@ -5,10 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from subprocess import CompletedProcess
+from subprocess import CalledProcessError, CompletedProcess
 
 from discripper.core import (
     ClassificationResult,
+    RipExecutionError,
     RipPlan,
     TitleInfo,
     rip_disc,
@@ -170,3 +171,41 @@ def test_run_rip_plan_skips_dry_run(tmp_path: Path, sample_title: TitleInfo) -> 
     result = run_rip_plan(plan, run=fake_run)
 
     assert result is None
+
+
+def test_run_rip_plan_maps_called_process_error(
+    tmp_path: Path, sample_title: TitleInfo
+) -> None:
+    plan = rip_title(
+        tmp_path / "device.iso",
+        sample_title,
+        tmp_path / "out.mp4",
+        which=_ffmpeg_only,
+    )
+
+    def fake_run(command: tuple[str, ...], check: bool) -> CompletedProcess[str]:
+        raise CalledProcessError(3, command)
+
+    with pytest.raises(RipExecutionError) as excinfo:
+        run_rip_plan(plan, run=fake_run)
+
+    assert excinfo.value.exit_code == 2
+    assert "exit code 3" in str(excinfo.value)
+
+
+def test_run_rip_plan_maps_os_error(tmp_path: Path, sample_title: TitleInfo) -> None:
+    plan = rip_title(
+        tmp_path / "device.iso",
+        sample_title,
+        tmp_path / "out.mp4",
+        which=_ffmpeg_only,
+    )
+
+    def fake_run(command: tuple[str, ...], check: bool) -> CompletedProcess[str]:
+        raise OSError(5, "Input/output error")
+
+    with pytest.raises(RipExecutionError) as excinfo:
+        run_rip_plan(plan, run=fake_run)
+
+    assert excinfo.value.exit_code == 2
+    assert "Input/output error" in str(excinfo.value)
