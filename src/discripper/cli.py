@@ -31,6 +31,9 @@ from .core import (
 )
 
 
+logger = logging.getLogger(__name__)
+
+
 def _print_error(message: str) -> None:
     """Emit *message* to :data:`sys.stderr` with a standard prefix."""
 
@@ -229,6 +232,12 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     thresholds = thresholds_from_config(config)
     classification = classify_disc(disc, thresholds=thresholds)
+    logger.info(
+        "EVENT=CLASSIFIED TYPE=%s EPISODES=%d LABEL=\"%s\"",
+        classification.disc_type,
+        len(classification.episodes),
+        disc.label,
+    )
 
     try:
         plans = _plan_rips(
