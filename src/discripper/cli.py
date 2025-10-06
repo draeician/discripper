@@ -34,6 +34,16 @@ from .core import (
 logger = logging.getLogger(__name__)
 
 
+# Exit code definitions.  These mirror the expectations outlined in the PRD
+# and keep :func:`main` readable when returning early.  The values are
+# intentionally small integers so they map cleanly onto the shell's exit status
+# semantics.
+EXIT_SUCCESS = 0
+EXIT_DISC_NOT_DETECTED = 1
+EXIT_RIP_FAILED = 2
+EXIT_UNEXPECTED_ERROR = 3
+
+
 def _print_error(message: str) -> None:
     """Emit *message* to :data:`sys.stderr` with a standard prefix."""
 
@@ -103,7 +113,10 @@ def _execute_rip_plans(plans: Sequence[RipPlan]) -> int:
         except RipExecutionError as exc:
             _print_error(str(exc))
             return exc.exit_code
-    return 0
+        except Exception as exc:  # pragma: no cover - defensive catch-all
+            _print_error(f"Unexpected ripping failure: {exc}")
+            return EXIT_UNEXPECTED_ERROR
+    return EXIT_SUCCESS
 
 
 def build_argument_parser() -> argparse.ArgumentParser:
@@ -216,7 +229,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             f"'{path_display}' not found or unreadable. Check that the disc is inserted "
             "and the device path is correct."
         )
-        return 1
+        return EXIT_DISC_NOT_DETECTED
 
     device = str(Path(str(device_path)).expanduser())
 
@@ -225,10 +238,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         disc = _inspect_disc(device, tools)
     except BluRayNotSupportedError as exc:
         _print_error(str(exc))
-        return 1
+        return EXIT_DISC_NOT_DETECTED
     except Exception as exc:  # pragma: no cover - defensive
         _print_error(f"Failed to inspect disc: {exc}")
-        return 1
+        return EXIT_DISC_NOT_DETECTED
 
     thresholds = thresholds_from_config(config)
     classification = classify_disc(disc, thresholds=thresholds)
@@ -249,7 +262,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     except Exception as exc:
         _print_error(f"Failed to prepare rip plan: {exc}")
-        return 1
+        return EXIT_UNEXPECTED_ERROR
 
     return _execute_rip_plans(plans)
 

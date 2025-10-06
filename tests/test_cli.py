@@ -14,6 +14,7 @@ from discripper.core import (
     ClassificationResult,
     DiscInfo,
     InspectionTools,
+    RipExecutionError,
     RipPlan,
     TitleInfo,
     ToolAvailability,
@@ -335,7 +336,7 @@ def test_main_configures_info_logging_by_default(tmp_path, monkeypatch) -> None:
     logging.basicConfig(level=logging.NOTSET, force=True)
     try:
         exit_code = cli.main([str(device)])
-        assert exit_code == 0
+        assert exit_code == cli.EXIT_SUCCESS
         assert logging.getLogger().getEffectiveLevel() == logging.INFO
     finally:
         logging.basicConfig(level=logging.NOTSET, force=True)
@@ -352,7 +353,7 @@ def test_main_configures_debug_logging_with_verbose(tmp_path, monkeypatch) -> No
     logging.basicConfig(level=logging.NOTSET, force=True)
     try:
         exit_code = cli.main(["--verbose", str(device)])
-        assert exit_code == 0
+        assert exit_code == cli.EXIT_SUCCESS
         assert logging.getLogger().getEffectiveLevel() == logging.DEBUG
     finally:
         logging.basicConfig(level=logging.NOTSET, force=True)
@@ -368,7 +369,7 @@ def test_main_executes_pipeline(monkeypatch, tmp_path) -> None:
 
     exit_code = cli.main([str(device)])
 
-    assert exit_code == 0
+    assert exit_code == cli.EXIT_SUCCESS
     assert events == [
         ("discover", False),
         ("inspect", "lsdvd"),
@@ -389,7 +390,7 @@ def test_main_uses_fallback_inspector_when_dvd_missing(monkeypatch, tmp_path) ->
 
     exit_code = cli.main([str(device)])
 
-    assert exit_code == 0
+    assert exit_code == cli.EXIT_SUCCESS
     assert ("inspect", "ffprobe") in events
 
 
@@ -403,7 +404,7 @@ def test_main_honors_dry_run_flag(monkeypatch, tmp_path) -> None:
 
     exit_code = cli.main(["--dry-run", str(device)])
 
-    assert exit_code == 0
+    assert exit_code == cli.EXIT_SUCCESS
     assert ("rip_disc", str(device), True) in events
 
 
@@ -419,7 +420,7 @@ def test_main_uses_series_output_paths_for_series_classification(
 
     exit_code = cli.main([str(device)])
 
-    assert exit_code == 0
+    assert exit_code == cli.EXIT_SUCCESS
     assert (
         "series_output_path",
         "Sample Series",
@@ -457,11 +458,32 @@ def test_main_logs_structured_classification_summary(monkeypatch, tmp_path) -> N
     finally:
         cli.logger.removeHandler(handler)
 
-    assert exit_code == 0
+    assert exit_code == cli.EXIT_SUCCESS
     assert (
         "EVENT=CLASSIFIED TYPE=series EPISODES=2 LABEL=\"Sample Series\""
         in messages
     )
+
+
+def test_main_returns_rip_failure_exit_code(monkeypatch, tmp_path, capsys) -> None:
+    """When ripping fails the CLI surfaces the message and exit code 2."""
+
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
+
+    _install_movie_pipeline(monkeypatch, tmp_path)
+
+    def failing_run(_plan: RipPlan):
+        raise RipExecutionError("command failed", exit_code=cli.EXIT_RIP_FAILED)
+
+    monkeypatch.setattr(cli, "run_rip_plan", failing_run)
+
+    exit_code = cli.main([str(device)])
+
+    assert exit_code == cli.EXIT_RIP_FAILED
+
+    captured = capsys.readouterr()
+    assert "command failed" in captured.err
 
 
 def test_main_errors_when_no_inspection_tools(monkeypatch, tmp_path, capsys) -> None:
@@ -477,7 +499,7 @@ def test_main_errors_when_no_inspection_tools(monkeypatch, tmp_path, capsys) -> 
 
     exit_code = cli.main([str(device)])
 
-    assert exit_code == 1
+    assert exit_code == cli.EXIT_DISC_NOT_DETECTED
 
     captured = capsys.readouterr()
     assert "No supported inspection tools" in captured.err
@@ -488,7 +510,7 @@ def test_main_errors_when_device_missing(capsys) -> None:
 
     code = cli.main(["/path/that/does/not/exist"])
 
-    assert code == 1
+    assert code == cli.EXIT_DISC_NOT_DETECTED
 
     captured = capsys.readouterr()
     assert "Error: device path '/path/that/does/not/exist'" in captured.err
@@ -504,7 +526,7 @@ def test_main_errors_when_device_unreadable(tmp_path, capsys, monkeypatch) -> No
 
     code = cli.main([str(device)])
 
-    assert code == 1
+    assert code == cli.EXIT_DISC_NOT_DETECTED
 
     captured = capsys.readouterr()
     assert f"Error: device path '{device}'" in captured.err
