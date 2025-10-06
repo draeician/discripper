@@ -7,7 +7,11 @@ from dataclasses import dataclass
 from os import fspath
 from pathlib import Path
 from shutil import which as default_which
-from subprocess import CompletedProcess, run as subprocess_run
+from subprocess import (
+    CalledProcessError,
+    CompletedProcess,
+    run as subprocess_run,
+)
 from typing import TYPE_CHECKING, Any, Optional, Tuple
 
 if TYPE_CHECKING:  # pragma: no cover - import for type checking only
@@ -23,6 +27,16 @@ class RipPlan:
     destination: Path
     command: Tuple[str, ...]
     will_execute: bool
+
+
+class RipExecutionError(RuntimeError):
+    """Error raised when executing an external ripping command fails."""
+
+    exit_code: int
+
+    def __init__(self, message: str, *, exit_code: int = 2) -> None:
+        super().__init__(message)
+        self.exit_code = exit_code
 
 
 def _ffmpeg_command(device: str, destination: Path) -> Tuple[str, ...]:
@@ -116,7 +130,31 @@ def run_rip_plan(
     if not plan.will_execute:
         return None
 
-    return run(plan.command, check=True)
+    try:
+        return run(plan.command, check=True)
+    except FileNotFoundError as exc:  # pragma: no cover - defensive on Python <3.11
+        raise RipExecutionError(
+            f"Ripping tool '{plan.command[0]}' was not found on PATH.",
+            exit_code=2,
+        ) from exc
+    except PermissionError as exc:
+        raise RipExecutionError(
+            f"Permission denied while executing '{plan.command[0]}'.",
+            exit_code=2,
+        ) from exc
+    except CalledProcessError as exc:
+        raise RipExecutionError(
+            (
+                "Ripping command failed with exit code "
+                f"{exc.returncode}: {' '.join(plan.command)}"
+            ),
+            exit_code=2,
+        ) from exc
+    except OSError as exc:  # pragma: no cover - generic OS error guard
+        raise RipExecutionError(
+            f"Unexpected I/O error executing '{plan.command[0]}': {exc.strerror or exc}.",
+            exit_code=2,
+        ) from exc
 
 
 def rip_disc(
@@ -157,3 +195,4 @@ def rip_disc(
         )
 
     return tuple(plans)
+
