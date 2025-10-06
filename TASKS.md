@@ -113,7 +113,7 @@
 
 ## Phase 15 – Follow-up Improvements
 - [x] Implement optional log file support per PRD Section 8 (configurable path + CLI flag) [#P15-T1]
-- [ ] Extend metadata config for optional menu OCR enrichment (schema, defaults, tests) [#P15-T2]
+- [x] Extend metadata config for optional menu OCR enrichment (schema, defaults, tests) [#P15-T2]
 - [ ] Build core menu OCR module with frame sampling, OCR backend integration, and structured logs (module returns labels) [#P15-T3]
 - [ ] Implement per-disc OCR label cache with modes and persistence under XDG cache (cache hit/miss verified) [#P15-T4]
 - [ ] Enrich DiscInfo/TitleInfo structures to carry OCR-derived labels alongside existing metadata (dataclasses updated) [#P15-T5]

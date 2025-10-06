@@ -84,6 +84,12 @@ in YAML terms—strings may include `~` for home-directory expansion.
 | `naming.lowercase` | boolean | When true, lowercase all generated paths. |
 | `naming.episode_title_strategy` | string | Episode title inference strategy (`label`, `episode-number`, or `module:callable`). |
 | `logging.level` | string or integer | Logging level (e.g. `INFO`, `DEBUG`, or `20`). |
+| `metadata.menu_ocr.enabled` | boolean | Toggle OCR enrichment for disc menus. |
+| `metadata.menu_ocr.backend` | string | OCR backend to use (e.g. `tesseract`). |
+| `metadata.menu_ocr.language` | string | Primary OCR language code. |
+| `metadata.menu_ocr.confidence_threshold` | number | Minimum confidence required to adopt OCR labels. |
+| `metadata.menu_ocr.frame_sample_interval` | number | Seconds between sampled menu frames during OCR. |
+| `metadata.menu_ocr.max_regions` | number | Maximum text regions to evaluate per menu capture. |
 
 The `naming.episode_title_strategy` option controls how episode names are inferred for
 series discs. Use the default `label` strategy to keep the source title labels, switch to
@@ -112,6 +118,12 @@ to verify each setting's default and the available override surface.
 | `naming.episode_title_strategy` | `label` | `naming.episode_title_strategy` | — | Selects episode naming strategy. |
 | `logging.level` | `INFO` | `logging.level` | `--verbose` | Flag forces `DEBUG` logging. |
 | `logging.file` | None | `logging.file` | `--log-file` | Optional log file path; leave unset to disable. |
+| `metadata.menu_ocr.enabled` | `false` | `metadata.menu_ocr.enabled` | — | Leave disabled to skip OCR enrichment. |
+| `metadata.menu_ocr.backend` | `tesseract` | `metadata.menu_ocr.backend` | — | Backend identifier used by OCR module. |
+| `metadata.menu_ocr.language` | `eng` | `metadata.menu_ocr.language` | — | ISO language code passed to OCR backend. |
+| `metadata.menu_ocr.confidence_threshold` | `0.6` | `metadata.menu_ocr.confidence_threshold` | — | Minimum confidence before using OCR results. |
+| `metadata.menu_ocr.frame_sample_interval` | `5` | `metadata.menu_ocr.frame_sample_interval` | — | Seconds between sampled menu frames. |
+| `metadata.menu_ocr.max_regions` | `5` | `metadata.menu_ocr.max_regions` | — | Text regions inspected per sampled frame. |
 
 ### Example configuration
 
@@ -133,6 +145,14 @@ naming:
 logging:
   level: INFO
   file: null
+metadata:
+  menu_ocr:
+    enabled: false
+    backend: tesseract
+    language: eng
+    confidence_threshold: 0.6
+    frame_sample_interval: 5
+    max_regions: 5
 ```
 
 When `compression` is set to `true` the CLI logs a ready-to-run
