@@ -23,7 +23,7 @@ from .discovery import (
 from .dvd import inspect_dvd
 from .fake import inspect_from_fixture
 from .ffprobe import inspect_with_ffprobe
-from .rip import RipPlan, rip_title
+from .rip import RipPlan, rip_disc, rip_title
 
 __all__ = [
     "DiscInfo",
@@ -43,6 +43,7 @@ __all__ = [
     "inspect_with_ffprobe",
     "inspect_from_fixture",
     "RipPlan",
+    "rip_disc",
     "rip_title",
     "__version__",
 ]

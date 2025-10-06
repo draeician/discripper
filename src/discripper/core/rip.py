@@ -2,13 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from os import fspath
 from pathlib import Path
 from typing import TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:  # pragma: no cover - import for type checking only
-    from . import TitleInfo
+    from . import ClassificationResult, TitleInfo
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,3 +57,34 @@ def rip_title(
         command=command,
         will_execute=not dry_run,
     )
+
+
+def rip_disc(
+    device: str | Path,
+    classification: "ClassificationResult",
+    destination_factory: Callable[["TitleInfo", str | None], str | Path],
+    *,
+    dry_run: bool = False,
+) -> Tuple[RipPlan, ...]:
+    """Return rip plans for all titles selected by *classification*.
+
+    The *destination_factory* callback receives each :class:`TitleInfo` and the
+    associated episode code (``s01eNN``) when available.  It must return the
+    output path where the resulting file should be written.  The function does
+    not perform any I/O; it simply prepares plans by delegating to
+    :func:`rip_title` for every relevant title.
+    """
+
+    episodes = classification.episodes
+    episode_codes: Tuple[str | None, ...]
+    if classification.episode_codes:
+        episode_codes = classification.episode_codes
+    else:
+        episode_codes = tuple(None for _ in episodes)
+
+    plans = []
+    for title, code in zip(episodes, episode_codes):
+        destination = destination_factory(title, code)
+        plans.append(rip_title(device, title, destination, dry_run=dry_run))
+
+    return tuple(plans)
