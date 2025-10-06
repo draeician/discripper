@@ -90,6 +90,12 @@ logging:
   level: INFO
 ```
 
+When `compression` is set to `true` the CLI logs a ready-to-run
+`HandBrakeCLI` command for each ripped file. The hook does not execute the
+command automatically; it simply assembles a safe default that you can copy
+once the rip completes. Leave the option at its default of `false` to skip
+generating the compression plans.
+
 CLI flags such as `--dry-run` and `--verbose` take precedence over values in the
 configuration file, allowing quick one-off overrides without editing disk
 settings.
