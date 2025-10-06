@@ -27,6 +27,21 @@ directly from the supplied device node (for example `/dev/sr0`) and writes an MP
 advanced Blu-ray decryption is **not** handled by `discripper`; external tools or system packages must be used when discs
 require additional decoding support.
 
+## Exit codes
+
+`discripper` communicates high-level failure modes via conventional process exit
+codes:
+
+| Code | Meaning                               |
+| ---- | ------------------------------------- |
+| 0    | Success                               |
+| 1    | Disc could not be detected or read    |
+| 2    | Ripping failed after planning         |
+| 3    | Unexpected internal error during rip  |
+
+Non-zero exit codes are accompanied by human-readable error messages on
+standard error so scripts can both log and react to failures.
+
 ## Contributing
 
 1. Check the next open item in `TASKS.md`.
