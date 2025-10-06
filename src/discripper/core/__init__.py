@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 from typing import Tuple
 
+from .bluray import BluRayNotSupportedError, inspect_blu_ray
 from .discovery import (
     BLURAY_INSPECTOR_CANDIDATES,
     InspectionTools,
@@ -22,7 +23,9 @@ __all__ = [
     "ToolAvailability",
     "discover_inspection_tools",
     "BLURAY_INSPECTOR_CANDIDATES",
+    "BluRayNotSupportedError",
     "inspect_dvd",
+    "inspect_blu_ray",
     "inspect_with_ffprobe",
     "__version__",
 ]
