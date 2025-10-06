@@ -1,33 +1,43 @@
-# Ref CLI — Agents & Communication Guide
+# Codex Agents & Communication Guide
 
-This file defines how contributors coordinate work in this repository using ChatGPT Codex and GitHub. It standardizes roles, status signals, and message formats so work is traceable and parallelizable.
+This file defines how contributors coordinate work in this repository using ChatGPT Codex and GitHub. It standardizes roles, status signals, and message formats so work is traceable, auditable, and parallelizable across any project.
 
 ---
 
 ## 1) Roles and source docs
 
-Roles map to mode guides in `.codex/modes/`. Read your mode before starting.
+Roles map to mode guides in `.codex/modes/`. Read your mode before starting. Not all modes are used every time, but all are available.
 
 * Task Master → `.codex/modes/TASKMASTER.md`
 * Coder → `.codex/modes/CODER.md`
 * Reviewer → `.codex/modes/REVIEWER.md`
 * Auditor → `.codex/modes/AUDITOR.md`
 * Blogger → `.codex/modes/BLOGGER.md`
-* Swarm Manager → `.codex/modes/SWAMMANAGER.md`
+* Swarm Manager → `.codex/modes/SWARMMANAGER.md`
 
-Tasks live in **`.codex/tasks/`** with random hash prefixes. Each task includes role, deliverables, and acceptance checks.
+### PRD & TASKS Contract (must follow)
+
+* Agents must derive identifiers from `0-work-flow.md` **Phase 0.2** output: `{PROJECT_NAME}`, `{PROJECT_SLUG}`, `{ENTRYPOINT}`, `{CONFIG_PATH}`. Do **not** hard-code names.
+* Agents must honor the **`TASKS.md` Format Contract** (see `Tasks Seed + Prompts`):
+
+  * Phases are level-2 headings: `## Phase N – Title` (contiguous N starting at 1)
+  * Tasks are single-line checkboxes `- [ ]` / `- [x]` (no nested bullets)
+  * Each task ends with a stable ID `[#P<N>-T<M>]`
+  * Tasks include a brief acceptance check in parentheses
+
+Tasks live in **`.codex/tasks/`** with random hash prefixes. Each task includes role, deliverables, and acceptance checks. Prefer the YAML front-matter template in `.codex/instructions/TASK_TEMPLATE.md`.
 
 ---
 
 ## 2) Ownership model
 
-* **Self-selection by role**: Coders pick tasks from `.codex/tasks/` that match their role and skills.
-* **Tier gating**: If a tier is active, only pick tasks from that tier. The current tier is noted in `.codex/notes/ACTIVE_TIER.md` when used.
-* **One agent per task at a time**: Use `[CLAIM]` to take it. If you stop or hand off, post `[UNCLAIM]`.
+* **Self-selection by role:** Coders pick tasks from `.codex/tasks/` that match their role and skills.
+* **Tier gating:** If a tier is active, only pick tasks from that tier. The current tier is noted in `.codex/notes/ACTIVE_TIER.md` when used.
+* **One agent per task at a time:** Use `[CLAIM]` to take it. If you stop or hand off, post `[UNCLAIM]`.
 
 ---
 
-## 3) Status signals
+## 3) Status signals (parseable)
 
 Use these bracketed signals at the start of any update in Codex task threads, PRs, or issue comments.
 
@@ -41,11 +51,32 @@ Use these bracketed signals at the start of any update in Codex task threads, PR
 * `[UNCLAIM]` Releasing ownership
 * `[ESCALATE]` Needs Task Master decision
 
+**Regex (must be first line):**
+
+```
+^\[(CLAIM|START|WIP|BLOCKED|NEED-INFO|REVIEW-REQUEST|DONE|UNCLAIM|ESCALATE)\]\b
+```
+
 Keep updates concise, action oriented, and link evidence.
 
 ---
 
-## 4) Where to post
+## 4) Team Communication Command (standard header)
+
+Use this header at the top of any Codex/GitHub comment to keep automation stable.
+
+```
+[TEAM-COMM] <purpose>
+task: .codex/tasks/<hash>-<slug>.md
+role: <Task Master|Coder|Reviewer|Auditor|Blogger|Swarm Manager>
+status: <CLAIM|START|WIP|BLOCKED|NEED-INFO|REVIEW-REQUEST|DONE|UNCLAIM|ESCALATE>
+links: <PR # / commit / artifact URLs>
+notes: <one-line summary>
+```
+
+---
+
+## 5) Where to post
 
 **In ChatGPT Codex UI**
 
@@ -60,106 +91,115 @@ Keep updates concise, action oriented, and link evidence.
 
 ---
 
-## 5) Update templates
+## 6) Update templates
 
 **Claim**
 
 ```
-[CLAIM] T1.1 JSONL WAL Engine
-repo: draeician/aether-codex@main
-actor: @your-handle  role: Coder(Memory)
-task-file: .codex/tasks/abcd1234-t1-1-jsonl-wal-engine.md
-start-window: today → +2 days
+[CLAIM] <task-title>
+repo: <org/repo@branch>
+actor: @handle  role: <Role>
+task-file: .codex/tasks/<hash>-<slug>.md
+start-window: <start → ETA>
 plan:
-- Read spec sections (WAL, retention, index)
-- Draft module skeleton + tests
-- Wire rotation + gzip + index rebuild
+- <step 1>
+- <step 2>
 ```
 
 **WIP**
 
 ```
-[WIP] T1.1 JSONL WAL Engine
+[WIP] <task-title>
 done:
-- Append API + rotation stub + unit tests scaffold
+- <bullets>
 next:
-- Gzip older than 24h + nightly index job
+- <bullets>
 risks:
-- File lock behavior on NFS (investigating)
+- <bullets>
 ```
 
 **Blocked**
 
 ```
-[BLOCKED] T1.1 JSONL WAL Engine
+[BLOCKED] <task-title>
 blocker:
-- Need confirmation: retention is "2 GB OR 7 days" prune by whichever comes first, correct?
+- <what’s blocking>
 ask:
-- If both exceed, apply size prune before age prune?
+- <specific question>
 ```
 
 **Review request**
 
 ```
-[REVIEW-REQUEST] T0.2 CI Pipeline
+[REVIEW-REQUEST] <task-title>
 evidence:
-- PR #123 adds GH Actions with ruff, mypy, pytest
-- Coverage gate 80% enforced
+- PR #<id> (<summary>)
+- Local gates: OK (see transcript)
 ask:
-- Reviewer to verify matrix for py3.11, py3.12
+- <what you want reviewed>
 ```
 
 **Done**
 
 ```
-[DONE] T2.2 Vault Secrets
+[DONE] <task-title>
 validation:
 - All acceptance checks pass
-- No plaintext secrets in WAL/logs (grep audit attached)
 links:
-- PR #145 merged
-- Test report: artifacts/pytest-report.html
+- PR #<id> merged
+- Test report / artifacts
 ```
 
 ---
 
-## 6) Definition of Done
+## 7) Global Definition of Done
 
-A task is done only if:
+A task is **Done** only if:
 
 1. All acceptance checks in the task file pass.
-2. Code, tests, and docs are updated together.
-3. CI is green on main for the change.
-4. Reviewer or Auditor clears it if required by the task.
+2. Code, tests, and docs updated together (if applicable).
+3. Local verification passes (commands defined by repo; see `.codex/instructions/LOCAL_GATES.md`).
+4. CI is green on target branch after PR.
+5. Reviewer or Auditor clears it if required by the task.
+6. The corresponding `TASKS.md` item is checked `[x]` and the task file is updated/moved per repo rules.
 
 ---
 
-## 7) Commit and PR conventions
+## 8) Commit & PR conventions
 
-Follow the repo guide:
-
-* Commits: `[TYPE] Title` where TYPE is one of `feat, fix, refactor, test, docs, chore, ci, perf, security`.
-* PRs mirror the format and include:
-
-  * Linked task path `(.codex/tasks/<hash>-...)`
-  * Summary of change and rationale
-  * Test evidence and coverage notes
-  * Risks and roll back steps
+* Commits: `[TYPE] Title` where TYPE ∈ `{feat, fix, refactor, test, docs, chore, ci, perf, security}`.
+* PR must link the task file path and summarize changes, risks, rollback, and evidence.
 
 ---
 
-## 8) Escalation ladder
+## 9) Escalation ladder
 
 1. Ask in the task thread with `[NEED-INFO]`.
 2. If no response, post `[ESCALATE]` tagging Task Master with the specific question.
-3. If still blocked, create a Reviewer or Auditor follow up per mode guide and link it back.
+3. If still blocked, create a Reviewer or Auditor follow-up per mode guide and link it back.
 
 ---
 
-## 9) Quick start for coders
+## 10) Quick start for coders
 
-1. Read your mode guide and the Ref spec sections relevant to your task.
+1. Read your mode guide and spec sections relevant to your task.
 2. Pick a task from `.codex/tasks/` that matches your role.
 3. Post `[CLAIM]` with the task path and plan.
 4. Ship small PRs tied to the task. Keep tests green.
 5. Post `[REVIEW-REQUEST]` with evidence. Then `[DONE]` when accepted.
+
+---
+
+## 11) Interop with Swarm Manager
+
+* Swarm Manager actions in Codex UI must mirror artifacts back into the repo:
+
+  * Generated tasks → `.codex/tasks/`
+  * Logs/notes → `.codex/notes/swarmmanager-*`
+* Use the **Team Communication Command** header in any mirrored notes.
+
+---
+
+## 12) Safety notes for public comms
+
+* Keep internal planning/chain-of-thought private. Publish only final conclusions.
