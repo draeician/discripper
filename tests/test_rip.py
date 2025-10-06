@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 from datetime import timedelta
+import io
+import time
 from pathlib import Path
+from typing import Callable
 
 import pytest
 
-from subprocess import CalledProcessError, CompletedProcess
+from subprocess import CompletedProcess
 
 from discripper.core import (
     ClassificationResult,
@@ -16,11 +19,52 @@ from discripper.core import (
     rip_title,
     run_rip_plan,
 )
+from discripper.core import rip as rip_module
 
 
 @pytest.fixture()
 def sample_title() -> TitleInfo:
     return TitleInfo(label="Main Feature", duration=timedelta(minutes=95))
+
+
+class FakePopen:
+    def __init__(
+        self,
+        command: tuple[str, ...],
+        *,
+        stderr_data: str = "",
+        stdout_data: str = "",
+        returncode: int = 0,
+        finish_delay: float = 0.0,
+        on_wait: Callable[[], None] | None = None,
+    ) -> None:
+        self.args = command
+        self.returncode = returncode
+        self._stderr = io.StringIO(stderr_data)
+        self._stdout = io.StringIO(stdout_data)
+        self.stderr = self._stderr
+        self.stdout = self._stdout
+        self._start = time.monotonic()
+        self._finish_delay = finish_delay
+        self._on_wait = on_wait
+
+    def poll(self) -> int | None:
+        if time.monotonic() - self._start >= self._finish_delay:
+            return self.returncode
+        return None
+
+    def wait(self, timeout: float | None = None) -> int:
+        deadline = None if timeout is None else time.monotonic() + timeout
+        while self.poll() is None:
+            if deadline is not None and time.monotonic() > deadline:
+                raise TimeoutError
+            time.sleep(0.01)
+        if self._on_wait is not None:
+            callback = self._on_wait
+            self._on_wait = None
+            callback()
+        return self.returncode
+
 
 
 def _ffmpeg_only(cmd: str) -> str | None:
@@ -38,8 +82,17 @@ def test_rip_title_builds_ffmpeg_plan(tmp_path: Path, sample_title: TitleInfo) -
     assert plan.title is sample_title
     assert plan.destination == destination
     assert plan.device == "/dev/sr0"
-    assert plan.command[:5] == ("ffmpeg", "-hide_banner", "-loglevel", "error", "-i")
-    assert plan.command[-1] == str(destination)
+    assert plan.command[:7] == (
+        "ffmpeg",
+        "-hide_banner",
+        "-nostats",
+        "-loglevel",
+        "error",
+        "-progress",
+        "pipe:2",
+    )
+    assert "-i" in plan.command
+    assert plan.command[-2:] == (plan.device, str(destination))
     assert plan.will_execute is True
 
 
@@ -143,15 +196,16 @@ def test_run_rip_plan_invokes_subprocess(tmp_path: Path, sample_title: TitleInfo
         which=_ffmpeg_only,
     )
 
-    calls: list[tuple[tuple[str, ...], bool]] = []
+    calls: list[tuple[tuple[str, ...], dict[str, object]]] = []
 
-    def fake_run(command: tuple[str, ...], check: bool) -> CompletedProcess[str]:
-        calls.append((command, check))
-        return CompletedProcess(command, 0)
+    def fake_popen(command: tuple[str, ...], **kwargs: object) -> FakePopen:
+        calls.append((command, kwargs))
+        return FakePopen(command)
 
-    result = run_rip_plan(plan, run=fake_run)
+    result = run_rip_plan(plan, popen=fake_popen)
 
-    assert calls == [(plan.command, True)]
+    assert calls
+    assert calls[0][0] == plan.command
     assert isinstance(result, CompletedProcess)
     assert result.returncode == 0
 
@@ -165,11 +219,11 @@ def test_run_rip_plan_creates_parent_directories(tmp_path: Path, sample_title: T
         which=_ffmpeg_only,
     )
 
-    def fake_run(command: tuple[str, ...], check: bool) -> CompletedProcess[str]:
+    def fake_popen(command: tuple[str, ...], **kwargs: object) -> FakePopen:
         assert destination.parent.exists()
-        return CompletedProcess(command, 0)
+        return FakePopen(command)
 
-    result = run_rip_plan(plan, run=fake_run)
+    result = run_rip_plan(plan, popen=fake_popen)
 
     assert isinstance(result, CompletedProcess)
 
@@ -186,15 +240,15 @@ def test_run_rip_plan_refuses_to_overwrite_existing_file(
         which=_ffmpeg_only,
     )
 
-    calls: list[tuple[tuple[str, ...], bool]] = []
+    calls: list[tuple[tuple[str, ...], dict[str, object]]] = []
 
-    def fake_run(command: tuple[str, ...], check: bool) -> CompletedProcess[str]:
-        calls.append((command, check))
-        return CompletedProcess(command, 0)
+    def fake_popen(command: tuple[str, ...], **kwargs: object) -> FakePopen:
+        calls.append((command, kwargs))
+        return FakePopen(command)
 
     with caplog.at_level("WARNING"):
         with pytest.raises(RipExecutionError, match="Refusing to overwrite existing file"):
-            run_rip_plan(plan, run=fake_run)
+            run_rip_plan(plan, popen=fake_popen)
 
     assert calls == []
     assert any("EVENT=RIP_GUARD" in message for message in caplog.messages)
@@ -211,10 +265,10 @@ def test_run_rip_plan_skips_dry_run(
         which=_ffmpeg_only,
     )
 
-    def fake_run(command: tuple[str, ...], check: bool) -> CompletedProcess[str]:
-        raise AssertionError("run should not be called for dry-run plans")
+    def fake_popen(command: tuple[str, ...], **kwargs: object) -> FakePopen:
+        raise AssertionError("popen should not be called for dry-run plans")
 
-    result = run_rip_plan(plan, run=fake_run)
+    result = run_rip_plan(plan, popen=fake_popen)
 
     assert result is None
 
@@ -232,13 +286,14 @@ def test_run_rip_plan_logs_success(tmp_path: Path, sample_title: TitleInfo, capl
         which=_ffmpeg_only,
     )
 
-    def fake_run(command: tuple[str, ...], check: bool) -> CompletedProcess[str]:
-        destination = plan.destination
-        destination.write_bytes(b"data")
-        return CompletedProcess(command, 0)
+    def fake_popen(command: tuple[str, ...], **kwargs: object) -> FakePopen:
+        return FakePopen(
+            command,
+            on_wait=lambda: plan.destination.write_bytes(b"data"),
+        )
 
     with caplog.at_level("INFO"):
-        result = run_rip_plan(plan, run=fake_run)
+        result = run_rip_plan(plan, popen=fake_popen)
 
     assert isinstance(result, CompletedProcess)
     assert any("EVENT=RIP_DONE" in message for message in caplog.messages)
@@ -255,11 +310,11 @@ def test_run_rip_plan_maps_called_process_error(
         which=_ffmpeg_only,
     )
 
-    def fake_run(command: tuple[str, ...], check: bool) -> CompletedProcess[str]:
-        raise CalledProcessError(3, command)
+    def fake_popen(command: tuple[str, ...], **kwargs: object) -> FakePopen:
+        return FakePopen(command, returncode=3)
 
     with pytest.raises(RipExecutionError) as excinfo:
-        run_rip_plan(plan, run=fake_run)
+        run_rip_plan(plan, popen=fake_popen)
 
     assert excinfo.value.exit_code == 2
     assert "exit code 3" in str(excinfo.value)
@@ -273,11 +328,133 @@ def test_run_rip_plan_maps_os_error(tmp_path: Path, sample_title: TitleInfo) -> 
         which=_ffmpeg_only,
     )
 
-    def fake_run(command: tuple[str, ...], check: bool) -> CompletedProcess[str]:
+    def fake_popen(command: tuple[str, ...], **kwargs: object) -> FakePopen:
         raise OSError(5, "Input/output error")
 
     with pytest.raises(RipExecutionError) as excinfo:
-        run_rip_plan(plan, run=fake_run)
+        run_rip_plan(plan, popen=fake_popen)
 
     assert excinfo.value.exit_code == 2
     assert "Input/output error" in str(excinfo.value)
+
+
+def test_run_rip_plan_reports_ffmpeg_progress(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    title = TitleInfo(label="Short", duration=timedelta(seconds=10))
+    plan = rip_title(
+        tmp_path / "device.iso",
+        title,
+        tmp_path / "out.mp4",
+        which=_ffmpeg_only,
+    )
+
+    stderr_data = "\n".join(
+        [
+            "frame=1",
+            "out_time_ms=1000",
+            "total_size=2048",
+            "speed=1.0x",
+            "progress=continue",
+            "junk",
+            "out_time_ms=5000",
+            "speed=1.5x",
+            "total_size=4096",
+            "progress=end",
+        ]
+    )
+    stderr_data += "\n"
+
+    def fake_popen(command: tuple[str, ...], **kwargs: object) -> FakePopen:
+        return FakePopen(
+            command,
+            stderr_data=stderr_data,
+            on_wait=lambda: plan.destination.write_bytes(b"done"),
+        )
+
+    with caplog.at_level("INFO"):
+        run_rip_plan(plan, popen=fake_popen)
+
+    progress_logs = [
+        record.message
+        for record in caplog.records
+        if "EVENT=PROGRESS BACKEND=ffmpeg" in record.message
+    ]
+
+    assert progress_logs, "Expected ffmpeg progress logs"
+    assert any("PCT=" in message and "PCT=100.0" not in message for message in progress_logs)
+    assert any("PCT=100.0" in message for message in progress_logs)
+
+
+def test_run_rip_plan_reports_dvdbackup_progress(
+    tmp_path: Path,
+    sample_title: TitleInfo,
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    destination = tmp_path / "movie.mp4"
+    plan = rip_title(
+        tmp_path / "device.iso",
+        sample_title,
+        destination,
+        which=lambda cmd: "/usr/bin/dvdbackup" if cmd == "dvdbackup" else None,
+    )
+
+    sizes = iter([0, 2048, 4096, 8192])
+
+    monkeypatch.setattr(rip_module, "_probe_dvd_volume_size", lambda device: 8192)
+    monkeypatch.setattr(rip_module, "_directory_size", lambda path: next(sizes, 8192))
+
+    def fake_popen(command: tuple[str, ...], **kwargs: object) -> FakePopen:
+        return FakePopen(command, finish_delay=0.05)
+
+    with caplog.at_level("INFO"):
+        run_rip_plan(plan, popen=fake_popen)
+
+    progress_logs = [
+        record.message
+        for record in caplog.records
+        if "EVENT=PROGRESS BACKEND=dvdbackup" in record.message
+    ]
+
+    assert progress_logs, "Expected dvdbackup progress logs"
+    assert any("BYTES_DONE=2048" in message for message in progress_logs)
+    assert any("PCT=" in message for message in progress_logs)
+
+
+def test_run_rip_plan_reports_dvdbackup_spinner_when_unknown_total(
+    tmp_path: Path,
+    sample_title: TitleInfo,
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    destination = tmp_path / "movie.mp4"
+    plan = rip_title(
+        tmp_path / "device.iso",
+        sample_title,
+        destination,
+        which=lambda cmd: "/usr/bin/dvdbackup" if cmd == "dvdbackup" else None,
+    )
+
+    sizes = iter([0, 1024, 2048])
+
+    monkeypatch.setattr(rip_module, "_probe_dvd_volume_size", lambda device: None)
+    monkeypatch.setattr(rip_module, "_directory_size", lambda path: next(sizes, 2048))
+
+    def fake_popen(command: tuple[str, ...], **kwargs: object) -> FakePopen:
+        return FakePopen(command, finish_delay=0.05)
+
+    with caplog.at_level("INFO"):
+        run_rip_plan(plan, popen=fake_popen)
+
+    progress_logs = [
+        record.message
+        for record in caplog.records
+        if "EVENT=PROGRESS BACKEND=dvdbackup" in record.message
+    ]
+
+    assert progress_logs, "Expected dvdbackup progress logs"
+    assert any("SPINNER=true" in message for message in progress_logs)
+    assert all(
+        "PCT=" not in message for message in progress_logs if "SPINNER=true" in message
+    )
