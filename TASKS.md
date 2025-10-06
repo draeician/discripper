@@ -37,7 +37,7 @@
 ## Phase 4 – Core Classification / Processing Logic
 - [x] Implement classifier per PRD thresholds (movie vs series) (returns type + episodes) [#P4-T1]
 - [x] Make thresholds configurable (e.g., long-title >60min, gaps <20%) (config keys respected) [#P4-T2]
-- [ ] Episode inference for series (order + s01eNN labels) (deterministic numbering) [#P4-T3]
+- [x] Episode inference for series (order + s01eNN labels) (deterministic numbering) [#P4-T3]
 - [ ] Default to movie on ambiguous structure with warning (log explains heuristic) [#P4-T4]
 - [ ] Unit tests: movie-only disc fixture (classifier selects main title) [#P4-T5]
 - [ ] Unit tests: 6-episode fixture (classifier detects series, counts episodes) [#P4-T6]
