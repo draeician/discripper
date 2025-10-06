@@ -23,7 +23,7 @@
 - [x] Wire logging levels (INFO default, DEBUG with `--verbose`) (log level toggles) [#P2-T4]
 - [x] Add schema fields: `output_directory`, `compression`, `naming.separator`, `naming.lowercase`, `logging.level` (schema validated) [#P2-T5]
 - [x] Unit tests for config precedence (defaults < config file < CLI flags) (pytest passes) [#P2-T6]
-- [ ] `{ENTRYPOINT} --help` shows usage and options (help includes flags/args) [#P2-T7]
+- [x] `{ENTRYPOINT} --help` shows usage and options (help includes flags/args) [#P2-T7]
 
 ## Phase 3 – Core Inspection / Input Acquisition
 - [ ] Define dataclasses `DiscInfo`, `TitleInfo` (fields for label, titles, chapters, durations) [#P3-T1]
