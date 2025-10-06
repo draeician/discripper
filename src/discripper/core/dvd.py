@@ -45,9 +45,13 @@ def _parse_lsdvd_output(output: str) -> Mapping[str, object]:
 
     if key == "lsdvd":
         disc_payload = payload.get("disc")
-        if not isinstance(disc_payload, Mapping):
-            raise ValueError("Parsed lsdvd wrapper does not contain disc mapping")
-        return disc_payload
+        if isinstance(disc_payload, Mapping):
+            return disc_payload
+
+        if any(key in payload for key in ("track", "title", "track_count")):
+            return payload
+
+        raise ValueError("Parsed lsdvd wrapper does not contain disc mapping")
 
     return payload
 
