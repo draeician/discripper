@@ -2,8 +2,11 @@
 
 from __future__ import annotations
 
+import re
+from functools import lru_cache
+from importlib import import_module
 from pathlib import Path
-from typing import TYPE_CHECKING, Mapping
+from typing import TYPE_CHECKING, Callable, Mapping
 import string
 import unicodedata
 
@@ -15,6 +18,106 @@ if TYPE_CHECKING:  # pragma: no cover - used for type checking only
 _SAFE_CHARS = set(string.ascii_letters + string.digits)
 _FALLBACK_NAME = "untitled"
 _FALLBACK_SEPARATOR = "_"
+_EPISODE_CODE_PATTERN = re.compile(r"s(?P<season>\d+)e(?P<episode>\d+)", re.IGNORECASE)
+
+EpisodeTitleStrategy = Callable[["TitleInfo", str | None], str]
+
+_BUILTIN_EPISODE_STRATEGIES: dict[str, EpisodeTitleStrategy] = {}
+
+
+def _register_builtin_episode_strategy(name: str, func: EpisodeTitleStrategy) -> None:
+    _BUILTIN_EPISODE_STRATEGIES[name] = func
+
+
+def _label_strategy(title: "TitleInfo", episode_code: str | None) -> str:
+    return title.label
+
+
+def _episode_number_strategy(title: "TitleInfo", episode_code: str | None) -> str:
+    if not episode_code:
+        return title.label
+
+    match = _EPISODE_CODE_PATTERN.fullmatch(episode_code)
+    if not match:
+        return episode_code
+
+    episode_number = int(match.group("episode"))
+    return f"Episode {episode_number:02d}"
+
+
+_register_builtin_episode_strategy("label", _label_strategy)
+_register_builtin_episode_strategy("episode-number", _episode_number_strategy)
+
+
+@lru_cache(maxsize=None)
+def _load_strategy(identifier: str) -> EpisodeTitleStrategy:
+    normalized = identifier.strip()
+    if not normalized:
+        return _BUILTIN_EPISODE_STRATEGIES["label"]
+
+    builtin = _BUILTIN_EPISODE_STRATEGIES.get(normalized)
+    if builtin is not None:
+        return builtin
+
+    if ":" not in normalized:
+        available = ", ".join(sorted(_BUILTIN_EPISODE_STRATEGIES))
+        raise ValueError(
+            "Unknown episode title strategy '"
+            f"{identifier}'. Available built-ins: {available}."
+        )
+
+    module_name, _, attribute = normalized.partition(":")
+    if not module_name or not attribute:
+        raise ValueError(
+            "Episode title strategy must be defined as 'module:callable'."
+        )
+
+    module = import_module(module_name)
+    strategy = getattr(module, attribute)
+    if not callable(strategy):  # pragma: no cover - defensive
+        raise TypeError(
+            f"Episode title strategy '{identifier}' must be callable."
+        )
+
+    return strategy  # type: ignore[return-value]
+
+
+def _strategy_from_config(
+    config: Mapping[str, object]
+) -> tuple[EpisodeTitleStrategy, str]:
+    naming_config = config.get("naming")
+    if isinstance(naming_config, Mapping):
+        candidate = naming_config.get("episode_title_strategy")
+        if isinstance(candidate, str):
+            strategy = _load_strategy(candidate)
+            return strategy, candidate
+
+    return _BUILTIN_EPISODE_STRATEGIES["label"], "label"
+
+
+def _episode_title_from_strategy(
+    title: "TitleInfo",
+    episode_code: str,
+    config: Mapping[str, object],
+) -> str:
+    strategy, identifier = _strategy_from_config(config)
+    try:
+        inferred = strategy(title, episode_code)
+    except Exception as exc:  # pragma: no cover - strategy-defined behaviour
+        raise RuntimeError(
+            f"Episode title strategy '{identifier}' raised an error: {exc}"
+        ) from exc
+
+    if not isinstance(inferred, str):
+        raise TypeError(
+            (
+                "Episode title strategy '"
+                f"{identifier}' must return a string, got {type(inferred).__name__}."
+            )
+        )
+
+    normalized = inferred.strip()
+    return normalized or title.label
 
 
 def _normalize_separator(separator: str) -> str:
@@ -156,8 +259,13 @@ def series_output_path(
         separator=separator,
         lowercase=lowercase,
     )
+    resolved_episode_title = _episode_title_from_strategy(
+        title,
+        episode_code,
+        config,
+    )
     sanitized_episode = sanitize_component(
-        title.label,
+        resolved_episode_title,
         separator=separator,
         lowercase=lowercase,
     )

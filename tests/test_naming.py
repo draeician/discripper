@@ -9,6 +9,10 @@ from discripper.core import (
 )
 
 
+def custom_episode_title_strategy(title: TitleInfo, episode_code: str | None) -> str:
+    return f"Custom {title.label}"
+
+
 def test_sanitize_component_replaces_unsafe_characters() -> None:
     sanitized = sanitize_component("Firefly: Serenity/Part 1")
     assert sanitized == "Firefly_Serenity_Part_1"
@@ -140,3 +144,30 @@ def test_series_output_path_adds_suffix_when_collision(tmp_path: Path) -> None:
 
     second = series_output_path("Example Show", title, "s01e01", config)
     assert second == tmp_path / "Example_Show" / "Example_Show-s01e01_Pilot_1.mp4"
+
+
+def test_series_output_path_uses_episode_number_strategy(tmp_path: Path) -> None:
+    title = TitleInfo(label="Episode 1", duration=timedelta(minutes=44))
+    config = {
+        "output_directory": tmp_path,
+        "naming": {"episode_title_strategy": "episode-number"},
+    }
+
+    path = series_output_path("Example Show", title, "s01e05", config)
+
+    assert path == tmp_path / "Example_Show" / "Example_Show-s01e05_Episode_05.mp4"
+
+
+def test_series_output_path_supports_custom_strategy(tmp_path: Path) -> None:
+    title = TitleInfo(label="Pilot", duration=timedelta(minutes=45))
+    config = {
+        "output_directory": tmp_path,
+        "naming": {
+            "episode_title_strategy": "test_naming:custom_episode_title_strategy",
+        },
+    }
+
+    path = series_output_path("Example Show", title, "s01e01", config)
+
+    expected = tmp_path / "Example_Show" / "Example_Show-s01e01_Custom_Pilot.mp4"
+    assert path == expected

@@ -68,7 +68,13 @@ in YAML terms—strings may include `~` for home-directory expansion.
 | `classification.series_gap_limit` | number | Allowed variance (0-1) between episode durations. |
 | `naming.separator` | string | Separator inserted between filename segments. |
 | `naming.lowercase` | boolean | When true, lowercase all generated paths. |
+| `naming.episode_title_strategy` | string | Episode title inference strategy (`label`, `episode-number`, or `module:callable`). |
 | `logging.level` | string or integer | Logging level (e.g. `INFO`, `DEBUG`, or `20`). |
+
+The `naming.episode_title_strategy` option controls how episode names are inferred for
+series discs. Use the default `label` strategy to keep the source title labels, switch to
+`episode-number` for generic `Episode 01` style names, or point to a custom callable using
+the `module:callable` notation to plug in project-specific logic.
 
 ### Example configuration
 
@@ -86,6 +92,7 @@ classification:
 naming:
   separator: _
   lowercase: false
+  episode_title_strategy: label
 logging:
   level: INFO
 ```
