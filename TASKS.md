@@ -28,7 +28,7 @@
 ## Phase 3 – Core Inspection / Input Acquisition
 - [x] Define dataclasses `DiscInfo`, `TitleInfo` (fields for label, titles, chapters, durations) [#P3-T1]
 - [x] Implement tool discovery for `lsdvd`, `ffprobe`, and Blu-ray inspector (detect availability) [#P3-T2]
-- [ ] Implement DVD inspector adapter using `lsdvd` where available (parses durations/titles) [#P3-T3]
+- [x] Implement DVD inspector adapter using `lsdvd` where available (parses durations/titles) [#P3-T3]
 - [ ] Implement fallback inspector using `ffprobe` on device (best-effort title/duration extraction) [#P3-T4]
 - [ ] Stub Blu-ray path (documented detection; usable later) (graceful “not supported yet” message) [#P3-T5]
 - [ ] Add fake inspector loading JSON fixtures from `tests/fixtures/` (injectable for tests) [#P3-T6]
