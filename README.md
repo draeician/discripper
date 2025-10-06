@@ -161,6 +161,32 @@ discripper /dev/sr0 --dry-run --verbose
 
 The command prints the planned titles and destinations while leaving the filesystem untouched—ideal for validating configuration, naming rules, or tool availability.
 
+## Output naming examples
+
+Run the simulation fixtures to see the sanitised filenames that `discripper` produces while respecting the PRD conventions:
+
+```bash
+bash scripts/demo.sh
+```
+
+The default configuration targets `~/Videos`, so a movie disc resolves to:
+
+```
+~/Videos/Main_Feature.mp4
+```
+
+Series discs follow the `<series>/<series>-s01eNN_<title>.mp4` structure:
+
+```
+~/Videos/Simulation_Limited_Series/
+├── Simulation_Limited_Series-s01e01_Episode_3.mp4
+├── Simulation_Limited_Series-s01e02_Episode_1.mp4
+├── Simulation_Limited_Series-s01e03_Episode_2.mp4
+└── Simulation_Limited_Series-s01e04_Episode_4.mp4
+```
+
+These examples come directly from the `samples/simulated_*.json` fixtures and are asserted by `tests/test_samples_naming.py`, keeping the documentation in lockstep with the implementation.
+
 ## Exit codes
 
 `discripper` communicates high-level failure modes via conventional process exit
