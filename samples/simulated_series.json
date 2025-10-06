@@ -1,0 +1,25 @@
+{
+  "label": "Simulation: Limited Series",
+  "titles": [
+    {
+      "label": "Episode 1",
+      "duration": 2700,
+      "chapters": [900, 900, 900]
+    },
+    {
+      "label": "Episode 2",
+      "duration": 2760,
+      "chapters": [900, 870, 990]
+    },
+    {
+      "label": "Episode 3",
+      "duration": 2640,
+      "chapters": [840, 900, 900]
+    },
+    {
+      "label": "Episode 4",
+      "duration": 2820,
+      "chapters": [900, 960, 960]
+    }
+  ]
+}

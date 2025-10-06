@@ -92,7 +92,7 @@
 
 ## Phase 11 – Simulation / E2E Dry-Run
 - [x] Hidden flag `--simulate FIXTURE.json` drives full pipeline without hardware (flag works) [#P11-T1]
-- [ ] Provide two sample simulation JSONs (movie, series) (files included) [#P11-T2]
+- [x] Provide two sample simulation JSONs (movie, series) (files included) [#P11-T2]
 - [ ] `scripts/demo.sh` shows planning & dry-run with simulate (script runs clean) [#P11-T3]
 
 ## Phase 12 – Optional / Deferred Features

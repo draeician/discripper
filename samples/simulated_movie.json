@@ -1,0 +1,15 @@
+{
+  "label": "Simulation: Feature Film",
+  "titles": [
+    {
+      "label": "Main Feature",
+      "duration": 6780,
+      "chapters": [1800, 1800, 1980, 1200]
+    },
+    {
+      "label": "Deleted Scenes",
+      "duration": 900,
+      "chapters": [300, 300, 300]
+    }
+  ]
+}
