@@ -96,7 +96,7 @@
 - [x] `scripts/demo.sh` shows planning & dry-run with simulate (script runs clean) [#P11-T3]
 
 ## Phase 12 – Optional / Deferred Features
-- [ ] Post-rip HandBrake hook if `compression=true` (command assembled; disabled by default) [#P12-T1]
+- [x] Post-rip HandBrake hook if `compression=true` (command assembled; disabled by default) [#P12-T1]
 - [ ] Configurable episode title inference strategy (pluggable; documented) [#P12-T2]
 - [ ] Metadata lookup (TheTVDB/TMDB) placeholder interface (non-blocking stub) [#P12-T3]
 

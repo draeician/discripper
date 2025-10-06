@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import logging
 import os
+import shlex
 import sys
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
@@ -105,18 +106,60 @@ def _plan_rips(
     )
 
 
-def _execute_rip_plans(plans: Sequence[RipPlan]) -> int:
+def _compression_output_path(path: Path) -> Path:
+    """Return the destination path for compressed output derived from *path*."""
+
+    return path.with_name(f"{path.stem}-compressed{path.suffix}")
+
+
+def _handbrake_command(source: Path) -> tuple[str, ...]:
+    """Return the HandBrakeCLI command for compressing *source* into a new file."""
+
+    destination = _compression_output_path(source)
+    return (
+        "HandBrakeCLI",
+        "-i",
+        str(source),
+        "-o",
+        str(destination),
+        "--preset",
+        "Fast 1080p30",
+    )
+
+
+def _emit_compression_plan(plan: RipPlan, *, executed: bool) -> None:
+    """Log the HandBrake compression plan for *plan*'s destination."""
+
+    command = _handbrake_command(plan.destination)
+    status = "ready" if executed else "dry-run"
+    logger.info(
+        'EVENT=COMPRESS_PLAN STATUS=%s SOURCE="%s" OUTPUT="%s" COMMAND="%s"',
+        status,
+        plan.destination,
+        _compression_output_path(plan.destination),
+        shlex.join(command),
+    )
+
+
+def _execute_rip_plans(
+    plans: Sequence[RipPlan], *, enable_compression: bool = False
+) -> int:
     """Run *plans* sequentially and return the resulting exit code."""
 
     for plan in plans:
         try:
-            run_rip_plan(plan)
+            result = run_rip_plan(plan)
         except RipExecutionError as exc:
             _print_error(str(exc))
             return exc.exit_code
         except Exception as exc:  # pragma: no cover - defensive catch-all
             _print_error(f"Unexpected ripping failure: {exc}")
             return EXIT_UNEXPECTED_ERROR
+        else:
+            if enable_compression:
+                _emit_compression_plan(
+                    plan, executed=bool(plan.will_execute and result is not None)
+                )
     return EXIT_SUCCESS
 
 
@@ -288,7 +331,10 @@ def _run_main(argv: Sequence[str] | None = None) -> int:
         _print_error(f"Failed to prepare rip plan: {exc}")
         return EXIT_UNEXPECTED_ERROR
 
-    return _execute_rip_plans(plans)
+    return _execute_rip_plans(
+        plans,
+        enable_compression=bool(config.get("compression", False)),
+    )
 
 
 def _handle_unexpected_exception(exc: Exception) -> int:

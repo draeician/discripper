@@ -6,6 +6,7 @@ import logging
 import json
 from datetime import timedelta
 from pathlib import Path
+from subprocess import CompletedProcess
 
 import pytest
 import yaml
@@ -684,7 +685,7 @@ def test_execute_rip_plans_propagates_rip_exit_code(monkeypatch, tmp_path) -> No
 
     monkeypatch.setattr(cli, "run_rip_plan", fail_with_custom_code)
 
-    exit_code = cli._execute_rip_plans((plan,))
+    exit_code = cli._execute_rip_plans((plan,), enable_compression=False)
 
     assert exit_code == 7
 
@@ -705,10 +706,66 @@ def test_execute_rip_plans_handles_unexpected_exception(monkeypatch, tmp_path, c
 
     monkeypatch.setattr(cli, "run_rip_plan", raise_unexpected)
 
-    exit_code = cli._execute_rip_plans((plan,))
+    exit_code = cli._execute_rip_plans((plan,), enable_compression=False)
 
     assert exit_code == cli.EXIT_UNEXPECTED_ERROR
     assert "Unexpected ripping failure" in capsys.readouterr().err
+
+
+def test_execute_rip_plans_emits_compression_plan(monkeypatch, tmp_path, caplog) -> None:
+    """When compression is enabled a HandBrake plan is logged for each rip."""
+
+    destination = tmp_path / "sample.mp4"
+    plan = RipPlan(
+        device="/dev/sr0",
+        title=TitleInfo(label="Sample", duration=timedelta(minutes=5)),
+        destination=destination,
+        command=("echo", "rip"),
+        will_execute=True,
+    )
+
+    def fake_run(_plan: RipPlan) -> CompletedProcess[str]:
+        destination.write_bytes(b"data")
+        return CompletedProcess(plan.command, 0)
+
+    monkeypatch.setattr(cli, "run_rip_plan", fake_run)
+
+    with caplog.at_level("INFO"):
+        exit_code = cli._execute_rip_plans((plan,), enable_compression=True)
+
+    assert exit_code == cli.EXIT_SUCCESS
+    message = next(msg for msg in caplog.messages if "EVENT=COMPRESS_PLAN" in msg)
+    assert "STATUS=ready" in message
+    assert str(destination) in message
+    assert "HandBrakeCLI" in message
+    compressed = destination.with_name(f"{destination.stem}-compressed{destination.suffix}")
+    assert str(compressed) in message
+
+
+def test_execute_rip_plans_marks_dry_run_compression(monkeypatch, tmp_path, caplog) -> None:
+    """Dry-run rip plans still surface the compression command with a status."""
+
+    destination = tmp_path / "sample.mp4"
+    plan = RipPlan(
+        device="/dev/sr0",
+        title=TitleInfo(label="Sample", duration=timedelta(minutes=5)),
+        destination=destination,
+        command=("echo", "rip"),
+        will_execute=False,
+    )
+
+    def fake_run(_plan: RipPlan) -> None:
+        return None
+
+    monkeypatch.setattr(cli, "run_rip_plan", fake_run)
+
+    with caplog.at_level("INFO"):
+        exit_code = cli._execute_rip_plans((plan,), enable_compression=True)
+
+    assert exit_code == cli.EXIT_SUCCESS
+    message = next(msg for msg in caplog.messages if "EVENT=COMPRESS_PLAN" in msg)
+    assert "STATUS=dry-run" in message
+    assert str(destination) in message
 
 
 def test_main_maps_bluray_errors_to_disc_not_detected(
