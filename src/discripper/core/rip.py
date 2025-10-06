@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shlex
 from collections.abc import Callable
 from dataclasses import dataclass
 from os import fspath
@@ -128,6 +129,7 @@ def run_rip_plan(
     """
 
     if not plan.will_execute:
+        print(f"[dry-run] Would execute: {shlex.join(plan.command)}")
         return None
 
     try:

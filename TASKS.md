@@ -49,7 +49,7 @@
 - [x] Implement `ffmpeg`-based basic ripping path (document constraints) (ffmpeg path works) [#P5-T3]
 - [x] Detect and use `dvdbackup`/other tools if available (choose simplest successful path) [#P5-T4]
 - [x] Handle I/O errors with clear messages and non-zero exit codes (errors mapped) [#P5-T5]
-- [ ] `--dry-run` prints plan only; performs no writes (no file side-effects) [#P5-T6]
+- [x] `--dry-run` prints plan only; performs no writes (no file side-effects) [#P5-T6]
 
 ## Phase 6 – Naming & Organization
 - [ ] Implement ASCII/unsafe char sanitization; use `naming.separator` (sanitizer unit-tested) [#P6-T1]

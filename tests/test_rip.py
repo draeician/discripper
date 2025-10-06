@@ -156,7 +156,9 @@ def test_run_rip_plan_invokes_subprocess(tmp_path: Path, sample_title: TitleInfo
     assert result.returncode == 0
 
 
-def test_run_rip_plan_skips_dry_run(tmp_path: Path, sample_title: TitleInfo) -> None:
+def test_run_rip_plan_skips_dry_run(
+    tmp_path: Path, sample_title: TitleInfo, capsys
+) -> None:
     plan = rip_title(
         tmp_path / "device.iso",
         sample_title,
@@ -171,6 +173,10 @@ def test_run_rip_plan_skips_dry_run(tmp_path: Path, sample_title: TitleInfo) -> 
     result = run_rip_plan(plan, run=fake_run)
 
     assert result is None
+
+    captured = capsys.readouterr()
+    assert "[dry-run] Would execute:" in captured.out
+    assert str(plan.destination) in captured.out
 
 
 def test_run_rip_plan_maps_called_process_error(
