@@ -27,14 +27,21 @@ def _normalize_separator(separator: str) -> str:
     return _FALLBACK_SEPARATOR
 
 
-def sanitize_component(value: str, *, separator: str = _FALLBACK_SEPARATOR) -> str:
+def sanitize_component(
+    value: str,
+    *,
+    separator: str = _FALLBACK_SEPARATOR,
+    lowercase: bool = False,
+) -> str:
     """Return *value* normalized for safe filesystem usage.
 
     The sanitizer enforces ASCII output by stripping diacritics and removing
     characters that are not alphanumeric. Replaced characters collapse into the
     configured *separator*. Consecutive separators are reduced to a single
     instance and trimmed from the ends. When the sanitized value would be empty,
-    a fallback name is returned to keep downstream paths valid.
+    a fallback name is returned to keep downstream paths valid. Set
+    :param:`lowercase` to :data:`True` when the resulting component should be
+    normalized to lowercase for case-insensitive filesystems.
     """
 
     normalized = unicodedata.normalize("NFKD", value)
@@ -53,4 +60,9 @@ def sanitize_component(value: str, *, separator: str = _FALLBACK_SEPARATOR) -> s
                 previous_was_separator = True
 
     sanitized = "".join(pieces).strip(safe_separator)
-    return sanitized or _FALLBACK_NAME
+    result = sanitized or _FALLBACK_NAME
+
+    if lowercase:
+        return result.lower()
+
+    return result

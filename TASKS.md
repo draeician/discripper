@@ -53,7 +53,7 @@
 
 ## Phase 6 – Naming & Organization
 - [x] Implement ASCII/unsafe char sanitization; use `naming.separator` (sanitizer unit-tested) [#P6-T1]
-- [ ] Implement `naming.lowercase` transformation (filenames & dirs reflect flag) [#P6-T2]
+- [x] Implement `naming.lowercase` transformation (filenames & dirs reflect flag) [#P6-T2]
 - [ ] Movie pattern: `<movieTitle>.mp4` in configured output dir (file path correct) [#P6-T3]
 - [ ] Series pattern: `<seriesName>/<seriesName>-s01eNN_<title>.mp4` (path shape correct) [#P6-T4]
 - [ ] Collision handling appends suffix `_1`, `_2`, … (no overwrite occurs) [#P6-T5]
