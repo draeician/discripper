@@ -85,3 +85,36 @@ def test_series_output_path_defaults_without_naming_section(tmp_path: Path) -> N
     path = series_output_path("Strange Show", title, "s01e02", config)
 
     assert path == tmp_path / "Strange_Show" / "Strange_Show-s01e02_Episode_2.mp4"
+
+
+def test_movie_output_path_adds_suffix_when_collision(tmp_path: Path) -> None:
+    title = TitleInfo(label="The Matrix", duration=timedelta(minutes=136))
+    config = {"output_directory": tmp_path}
+
+    first = movie_output_path(title, config)
+    assert first == tmp_path / "The_Matrix.mp4"
+
+    first.touch()
+
+    second = movie_output_path(title, config)
+    assert second == tmp_path / "The_Matrix_1.mp4"
+
+    second.touch()
+
+    third = movie_output_path(title, config)
+    assert third == tmp_path / "The_Matrix_2.mp4"
+
+
+def test_series_output_path_adds_suffix_when_collision(tmp_path: Path) -> None:
+    title = TitleInfo(label="Pilot", duration=timedelta(minutes=42))
+    config = {"output_directory": tmp_path}
+
+    first = series_output_path("Example Show", title, "s01e01", config)
+    expected = tmp_path / "Example_Show" / "Example_Show-s01e01_Pilot.mp4"
+    assert first == expected
+
+    expected.parent.mkdir(parents=True, exist_ok=True)
+    expected.touch()
+
+    second = series_output_path("Example Show", title, "s01e01", config)
+    assert second == tmp_path / "Example_Show" / "Example_Show-s01e01_Pilot_1.mp4"

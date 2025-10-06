@@ -56,7 +56,7 @@
 - [x] Implement `naming.lowercase` transformation (filenames & dirs reflect flag) [#P6-T2]
 - [x] Movie pattern: `<movieTitle>.mp4` in configured output dir (file path correct) [#P6-T3]
 - [x] Series pattern: `<seriesName>/<seriesName>-s01eNN_<title>.mp4` (path shape correct) [#P6-T4]
-- [ ] Collision handling appends suffix `_1`, `_2`, … (no overwrite occurs) [#P6-T5]
+- [x] Collision handling appends suffix `_1`, `_2`, … (no overwrite occurs) [#P6-T5]
 - [ ] Ensure parent directories are created as needed (dirs created automatically) [#P6-T6]
 
 ## Phase 7 – Orchestration, Logging, Error Handling

@@ -101,6 +101,30 @@ def _output_directory_from_config(config: Mapping[str, object]) -> Path:
     return Path(output_dir_value).expanduser()
 
 
+def _ensure_unique_path(path: Path) -> Path:
+    """Return a path that does not collide with an existing file.
+
+    When *path* already exists, the function appends an incrementing suffix of
+    the form ``_1``, ``_2``, … before the file extension until a free name is
+    found.  The original path is returned unchanged when no collision is
+    detected.
+    """
+
+    if not path.exists():
+        return path
+
+    stem = path.stem
+    suffix = path.suffix
+    parent = path.parent
+
+    counter = 1
+    while True:
+        candidate = parent / f"{stem}_{counter}{suffix}"
+        if not candidate.exists():
+            return candidate
+        counter += 1
+
+
 def movie_output_path(
     title: "TitleInfo",
     config: Mapping[str, object],
@@ -114,7 +138,8 @@ def movie_output_path(
         lowercase=lowercase,
     )
 
-    return _output_directory_from_config(config) / f"{sanitized_title}.mp4"
+    initial = _output_directory_from_config(config) / f"{sanitized_title}.mp4"
+    return _ensure_unique_path(initial)
 
 
 def series_output_path(
@@ -139,4 +164,4 @@ def series_output_path(
 
     directory = _output_directory_from_config(config) / sanitized_series
     filename = f"{sanitized_series}-{episode_code}_{sanitized_episode}.mp4"
-    return directory / filename
+    return _ensure_unique_path(directory / filename)
