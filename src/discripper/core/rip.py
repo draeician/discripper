@@ -148,6 +148,19 @@ def run_rip_plan(
         logger.info('EVENT=RIP_SKIPPED FILE="%s" REASON=dry-run', plan.destination)
         return None
 
+    if plan.destination.exists():
+        logger.warning(
+            'EVENT=RIP_GUARD FILE="%s" REASON=destination-exists',
+            plan.destination,
+        )
+        raise RipExecutionError(
+            (
+                "Refusing to overwrite existing file "
+                f"'{plan.destination}'. Remove the file or choose a different output path."
+            ),
+            exit_code=2,
+        )
+
     plan.destination.parent.mkdir(parents=True, exist_ok=True)
 
     try:
