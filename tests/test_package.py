@@ -1,5 +1,8 @@
 """Smoke tests for the discripper package."""
 
+from pathlib import Path
+import sys
+
 import discripper
 from discripper import cli
 from discripper import core
@@ -27,3 +30,13 @@ def test_core_version_is_exposed() -> None:
 
     assert isinstance(core.__version__, str)
     assert core.__version__ != ""
+
+
+def test_pytest_pythonpath_includes_src() -> None:
+    """Pytest configuration ensures the source directory is importable."""
+
+    repo_root = Path(__file__).resolve().parents[1]
+    expected_src = repo_root / "src"
+
+    assert expected_src.exists()
+    assert any(Path(path).resolve() == expected_src for path in map(Path, sys.path))
