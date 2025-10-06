@@ -1,12 +1,35 @@
 {
   "label": "Six Episode Series",
   "titles": [
-    {"label": "Episode 1", "duration": "00:24:30"},
-    {"label": "Episode 2", "duration": "00:24:45"},
-    {"label": "Episode 3", "duration": "00:24:15"},
-    {"label": "Episode 4", "duration": "00:24:50"},
-    {"label": "Episode 5", "duration": "00:24:40"},
-    {"label": "Episode 6", "duration": "00:24:35"},
-    {"label": "Bonus Feature", "duration": "01:10:00"}
+    {
+      "label": "Episode 1 - The Arrival",
+      "duration": "00:24:18",
+      "chapters": ["00:08:06", "00:08:05", "00:08:07"]
+    },
+    {
+      "label": "Episode 2 - Hidden Signals",
+      "duration": "00:24:32",
+      "chapters": ["00:08:12", "00:08:10", "00:08:10"]
+    },
+    {
+      "label": "Episode 3 - Power Surge",
+      "duration": "00:24:21",
+      "chapters": ["00:08:05", "00:08:08", "00:08:08"]
+    },
+    {
+      "label": "Episode 4 - Broken Trust",
+      "duration": "00:24:45",
+      "chapters": ["00:08:15", "00:08:13", "00:08:17"]
+    },
+    {
+      "label": "Episode 5 - Shadow Run",
+      "duration": "00:24:27",
+      "chapters": ["00:08:09", "00:08:09", "00:08:09"]
+    },
+    {
+      "label": "Episode 6 - Last Light",
+      "duration": "00:24:39",
+      "chapters": ["00:08:13", "00:08:13", "00:08:13"]
+    }
   ]
 }

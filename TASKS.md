@@ -69,7 +69,7 @@
 
 ## Phase 8 – Tests & Fixtures
 - [x] Add fixtures: single-movie disc JSON (titles + durations) (file present) [#P8-T1]
-- [ ] Add fixtures: multi-episode disc JSON (6 episodes) (file present) [#P8-T2]
+- [x] Add fixtures: multi-episode disc JSON (6 episodes) (file present) [#P8-T2]
 - [ ] Add fixtures: ambiguous structure JSON (borderline durations) (file present) [#P8-T3]
 - [ ] Tests: config precedence (defaults/config/CLI) (pytest passes) [#P8-T4]
 - [ ] Tests: classification across all fixtures (pass; deterministic) [#P8-T5]
