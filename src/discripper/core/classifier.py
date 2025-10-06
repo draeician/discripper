@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import timedelta
@@ -11,6 +12,8 @@ if TYPE_CHECKING:  # pragma: no cover - for typing only
     from . import DiscInfo, TitleInfo
 
 DiscType = Literal["movie", "series"]
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,6 +79,13 @@ def classify_disc(
     if _is_movie_candidate(longest_title, durations, total_runtime, active_thresholds):
         return ClassificationResult("movie", (longest_title,))
 
+    logger.warning(
+        "Ambiguous disc structure for %s; defaulting to movie using longest title %s "
+        "(%.1f minutes). Adjust classification thresholds to override.",
+        disc.label,
+        longest_title.label,
+        longest_title.duration.total_seconds() / 60,
+    )
     return ClassificationResult("movie", (longest_title,))
 
 
