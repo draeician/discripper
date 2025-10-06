@@ -39,6 +39,11 @@ def test_sanitize_component_applies_lowercase_when_requested() -> None:
     assert sanitized == "firefly_serenity"
 
 
+def test_sanitize_component_falls_back_when_separator_invalid() -> None:
+    sanitized = sanitize_component("Season • Finale", separator="•")
+    assert sanitized == "Season_Finale"
+
+
 def test_movie_output_path_uses_configured_directory(tmp_path: Path) -> None:
     title = TitleInfo(label="The Matrix", duration=timedelta(minutes=136))
     config = {
@@ -85,6 +90,23 @@ def test_series_output_path_defaults_without_naming_section(tmp_path: Path) -> N
     path = series_output_path("Strange Show", title, "s01e02", config)
 
     assert path == tmp_path / "Strange_Show" / "Strange_Show-s01e02_Episode_2.mp4"
+
+
+def test_series_output_path_applies_lowercase_and_sanitization(tmp_path: Path) -> None:
+    title = TitleInfo(label="Épisode Finale!", duration=timedelta(minutes=58))
+    config = {
+        "output_directory": tmp_path,
+        "naming": {"separator": "-", "lowercase": True},
+    }
+
+    path = series_output_path("Série Étrange?!", title, "s02e10", config)
+
+    expected = (
+        tmp_path
+        / "serie-etrange"
+        / "serie-etrange-s02e10_episode-finale.mp4"
+    )
+    assert path == expected
 
 
 def test_movie_output_path_adds_suffix_when_collision(tmp_path: Path) -> None:
