@@ -81,7 +81,7 @@
 ## Phase 9 – Packaging & Install
 - [x] Finalize `pyproject.toml` metadata (name, version, classifiers) (builds sdist/wheel) [#P9-T1]
 - [x] Confirm `console_scripts` exposes `{ENTRYPOINT}` (invokes CLI after install) [#P9-T2]
-- [ ] Makefile: `install`, `lint`, `test`, `format` targets (targets run successfully) [#P9-T3]
+- [x] Makefile: `install`, `lint`, `test`, `format` targets (targets run successfully) [#P9-T3]
 - [ ] Verify `pipx install -e .` and `pip install -e .` (both flows work) [#P9-T4]
 
 ## Phase 10 – Docs & Quickstart
