@@ -12,6 +12,7 @@ from .discovery import (
     ToolAvailability,
     discover_inspection_tools,
 )
+from .dvd import inspect_dvd
 
 __all__ = [
     "DiscInfo",
@@ -20,6 +21,7 @@ __all__ = [
     "ToolAvailability",
     "discover_inspection_tools",
     "BLURAY_INSPECTOR_CANDIDATES",
+    "inspect_dvd",
     "__version__",
 ]
 
