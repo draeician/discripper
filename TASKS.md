@@ -52,7 +52,7 @@
 - [x] `--dry-run` prints plan only; performs no writes (no file side-effects) [#P5-T6]
 
 ## Phase 6 – Naming & Organization
-- [ ] Implement ASCII/unsafe char sanitization; use `naming.separator` (sanitizer unit-tested) [#P6-T1]
+- [x] Implement ASCII/unsafe char sanitization; use `naming.separator` (sanitizer unit-tested) [#P6-T1]
 - [ ] Implement `naming.lowercase` transformation (filenames & dirs reflect flag) [#P6-T2]
 - [ ] Movie pattern: `<movieTitle>.mp4` in configured output dir (file path correct) [#P6-T3]
 - [ ] Series pattern: `<seriesName>/<seriesName>-s01eNN_<title>.mp4` (path shape correct) [#P6-T4]
