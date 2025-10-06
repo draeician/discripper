@@ -24,6 +24,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "naming": {
         "separator": "_",
         "lowercase": False,
+        "episode_title_strategy": "label",
     },
     "logging": {
         "level": "INFO",
@@ -44,6 +45,7 @@ CONFIG_SCHEMA: dict[str, Any] = {
     "naming": {
         "separator": str,
         "lowercase": bool,
+        "episode_title_strategy": str,
     },
     "logging": {
         "level": (str, int),
