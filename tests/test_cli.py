@@ -448,6 +448,64 @@ def test_main_honors_dry_run_flag(monkeypatch, tmp_path) -> None:
     assert ("rip_disc", str(device), True) in events
 
 
+def test_main_dry_run_prints_plan(monkeypatch, tmp_path, capsys) -> None:
+    """Dry-run mode reports the planned commands instead of executing them."""
+
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
+
+    title = TitleInfo(label="Main Feature", duration=timedelta(minutes=95))
+    disc = DiscInfo(label="Sample Disc", titles=(title,))
+    classification = ClassificationResult("movie", (title,))
+
+    tools = InspectionTools(
+        dvd=ToolAvailability("lsdvd", "/usr/bin/lsdvd"),
+        fallback=None,
+        blu_ray=None,
+    )
+
+    monkeypatch.setattr(cli, "discover_inspection_tools", lambda: tools)
+    monkeypatch.setattr(cli, "inspect_dvd", lambda *_args, **_kwargs: disc)
+    monkeypatch.setattr(cli, "classify_disc", lambda *_args, **_kwargs: classification)
+    monkeypatch.setattr(
+        cli,
+        "movie_output_path",
+        lambda *_args, **_kwargs: tmp_path / "planned.mp4",
+    )
+    def unexpected_series_path(*_args, **_kwargs):
+        raise AssertionError("Series output path should not be used for movie plans")
+
+    monkeypatch.setattr(cli, "series_output_path", unexpected_series_path)
+
+    def fake_rip_disc(
+        device_path,
+        classification_value,
+        destination_factory,
+        *,
+        dry_run,
+        which=None,
+    ) -> tuple[RipPlan, ...]:
+        destination = destination_factory(classification_value.episodes[0], None)
+        return (
+            RipPlan(
+                device=device_path,
+                title=classification_value.episodes[0],
+                destination=destination,
+                command=("echo", "rip"),
+                will_execute=not dry_run,
+            ),
+        )
+
+    monkeypatch.setattr(cli, "rip_disc", fake_rip_disc)
+
+    exit_code = cli.main(["--dry-run", str(device)])
+
+    assert exit_code == cli.EXIT_SUCCESS
+
+    captured = capsys.readouterr().out
+    assert "[dry-run] Would execute: echo rip" in captured
+
+
 def test_main_uses_series_output_paths_for_series_classification(
     monkeypatch, tmp_path
 ) -> None:

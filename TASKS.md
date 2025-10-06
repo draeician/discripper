@@ -74,7 +74,7 @@
 - [x] Tests: config precedence (defaults/config/CLI) (pytest passes) [#P8-T4]
 - [x] Tests: classification across all fixtures (pass; deterministic) [#P8-T5]
 - [x] Tests: naming sanitization & lowercase options (pass) [#P8-T6]
-- [ ] Tests: dry-run planning prints expected actions (pass) [#P8-T7]
+- [x] Tests: dry-run planning prints expected actions (pass) [#P8-T7]
 - [ ] Tests: exit code mapping for common failures (pass) [#P8-T8]
 - [ ] Coverage gate ≥ 80% (report shows ≥80%) [#P8-T9]
 
