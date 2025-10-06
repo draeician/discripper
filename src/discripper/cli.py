@@ -214,8 +214,8 @@ def _is_readable_device(path: object) -> bool:
     return os.access(candidate, os.R_OK)
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    """Entry point for the console script."""
+def _run_main(argv: Sequence[str] | None = None) -> int:
+    """Execute the CLI and return an appropriate exit code."""
 
     args = parse_arguments(argv)
     config = resolve_cli_config(args)
@@ -265,6 +265,30 @@ def main(argv: Sequence[str] | None = None) -> int:
         return EXIT_UNEXPECTED_ERROR
 
     return _execute_rip_plans(plans)
+
+
+def _handle_unexpected_exception(exc: Exception) -> int:
+    """Log *exc* when debugging and surface a friendly user message."""
+
+    if logger.isEnabledFor(logging.DEBUG):
+        logger.debug("Unhandled exception encountered", exc_info=exc)
+
+    _print_error("An unexpected error occurred. Run with --verbose for details.")
+    return EXIT_UNEXPECTED_ERROR
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Entry point for the console script."""
+
+    try:
+        return _run_main(argv)
+    except SystemExit:
+        raise
+    except KeyboardInterrupt:
+        _print_error("Operation cancelled by user.")
+        return EXIT_UNEXPECTED_ERROR
+    except Exception as exc:  # pragma: no cover - defensive catch-all
+        return _handle_unexpected_exception(exc)
 
 
 if __name__ == "__main__":  # pragma: no cover
