@@ -92,3 +92,17 @@ def test_inspect_from_fixture_accepts_custom_directory(tmp_path: Path) -> None:
         timedelta(minutes=3, seconds=20),
         timedelta(minutes=3, seconds=20),
     )
+
+
+def test_simulation_samples_are_available() -> None:
+    samples_dir = Path(__file__).resolve().parents[1] / "samples"
+
+    movie_disc = inspect_from_fixture("simulated_movie", fixture_dir=samples_dir)
+    assert movie_disc.label == "Simulation: Feature Film"
+    assert len(movie_disc.titles) == 2
+    assert movie_disc.titles[0].label == "Main Feature"
+
+    series_disc = inspect_from_fixture("simulated_series", fixture_dir=samples_dir)
+    assert series_disc.label == "Simulation: Limited Series"
+    assert len(series_disc.titles) == 4
+    assert series_disc.titles[0].label == "Episode 1"
