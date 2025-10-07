@@ -142,7 +142,7 @@
     - When multiple tracks are produced, each appears with accurate properties.
     - Command exits non-error even if some non-critical fields are unavailable (fields may be null).
 
-- [ ] Wire CLI → core → ripper → post-processing [#PX-T4]
+- [x] Wire CLI → core → ripper → post-processing [#PX-T4]
   - **Description:** Ensure the title flag flows end-to-end so naming and metadata generation have access to it; centralize naming util.
   - **Acceptance Criteria:**
     - Single source-of-truth function for slug + path building.

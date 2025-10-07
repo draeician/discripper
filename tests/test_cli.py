@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import logging
 import json
 from datetime import timedelta
@@ -21,6 +22,7 @@ from discripper.core import (
     InspectionTools,
     RipExecutionError,
     RipPlan,
+    TITLE_SOURCE_KEY,
     TitleInfo,
     ToolAvailability,
 )
@@ -425,6 +427,36 @@ def test_resolve_cli_config_includes_title_override(tmp_path: Path) -> None:
     resolved = cli.resolve_cli_config(args)
 
     assert resolved["title"] == "The Matrix"
+
+
+def test_resolve_cli_config_marks_cli_title_source() -> None:
+    """CLI overrides are marked so downstream helpers know the source."""
+
+    args = cli.parse_arguments(["-t", "Custom Title"])
+
+    resolved = cli.resolve_cli_config(args)
+
+    assert resolved["title"] == "Custom Title"
+    assert resolved[TITLE_SOURCE_KEY] == "cli"
+
+
+def test_resolve_cli_config_marks_config_title_source(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Titles supplied via configuration files retain their provenance."""
+
+    base = copy.deepcopy(config_module.DEFAULT_CONFIG)
+    base["title"] = "Preconfigured"
+
+    def fake_load_config(_path: object) -> dict[str, object]:
+        return copy.deepcopy(base)
+
+    monkeypatch.setattr(cli, "load_config", fake_load_config)
+
+    args = cli.parse_arguments([])
+
+    resolved = cli.resolve_cli_config(args)
+
+    assert resolved["title"] == "Preconfigured"
+    assert resolved[TITLE_SOURCE_KEY] == "config"
 
 
 def test_cli_help_mentions_device_default() -> None:

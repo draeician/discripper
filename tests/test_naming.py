@@ -2,9 +2,12 @@ from datetime import timedelta
 from pathlib import Path
 
 from discripper.core import (
+    DiscInfo,
     TitleInfo,
+    TITLE_SOURCE_KEY,
     movie_output_path,
     sanitize_component,
+    select_disc_title,
     series_output_path,
 )
 def test_sanitize_component_replaces_unsafe_characters() -> None:
@@ -121,3 +124,43 @@ def test_series_output_path_adds_suffix_when_collision(tmp_path: Path) -> None:
 
     second = series_output_path("Example Show", title, "s01e01", config)
     assert second == tmp_path / "example-show" / "example-show_track01_1.mp4"
+
+
+def test_select_disc_title_prefers_cli_override() -> None:
+    disc = DiscInfo(label="Sample Disc")
+    config = {TITLE_SOURCE_KEY: "cli", "title": "  Custom Title  "}
+
+    selected, source = select_disc_title(config, disc)
+
+    assert selected == "Custom Title"
+    assert source == "cli"
+
+
+def test_select_disc_title_uses_config_source_when_missing_marker() -> None:
+    disc = DiscInfo(label="Sample Disc")
+    config = {"title": " Preconfigured "}
+
+    selected, source = select_disc_title(config, disc)
+
+    assert selected == "Preconfigured"
+    assert source == "config"
+
+
+def test_select_disc_title_falls_back_to_disc_label() -> None:
+    disc = DiscInfo(label="  Disc Label  ")
+    config: dict[str, object] = {}
+
+    selected, source = select_disc_title(config, disc)
+
+    assert selected == "Disc Label"
+    assert source == "disc-label"
+
+
+def test_select_disc_title_uses_fallback_when_no_label() -> None:
+    disc = DiscInfo(label="   ")
+    config: dict[str, object] = {}
+
+    selected, source = select_disc_title(config, disc)
+
+    assert selected == "untitled"
+    assert source == "fallback"

@@ -31,7 +31,13 @@ from .metadata import (
     MetadataProvider,
     NullMetadataProvider,
 )
-from .naming import movie_output_path, sanitize_component, series_output_path
+from .naming import (
+    TITLE_SOURCE_KEY,
+    movie_output_path,
+    sanitize_component,
+    select_disc_title,
+    series_output_path,
+)
 from .rip import RipExecutionError, RipPlan, rip_disc, rip_title, run_rip_plan
 
 __all__ = [
@@ -58,8 +64,10 @@ __all__ = [
     "NullMetadataProvider",
     "DEFAULT_METADATA_PROVIDER",
     "sanitize_component",
+    "select_disc_title",
     "movie_output_path",
     "series_output_path",
+    "TITLE_SOURCE_KEY",
     "RipExecutionError",
     "RipPlan",
     "rip_disc",
