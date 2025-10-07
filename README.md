@@ -83,6 +83,10 @@ in YAML terms—strings may include `~` for home-directory expansion.
 | `naming.separator` | string | Separator inserted between filename segments. |
 | `naming.lowercase` | boolean | When true, lowercase all generated paths. |
 | `naming.episode_title_strategy` | string | Episode title inference strategy (`label`, `episode-number`, or `module:callable`). |
+| `naming.disc_directory_pattern` | string | Pattern for the directory that contains rip artifacts (`{slug}` by default). |
+| `naming.track_filename_pattern` | string | Pattern for individual track filenames (`{slug}_track{index:02d}{extension}` by default). |
+| `metadata.placement` | string | Where to place `metadata.json` (`title-directory` or `output-root`). |
+| `metadata.directory` | string or null | Absolute path override for metadata output (`null` to disable). |
 | `logging.level` | string or integer | Logging level (e.g. `INFO`, `DEBUG`, or `20`). |
 
 The `naming.episode_title_strategy` option controls how episode names are inferred for
@@ -110,6 +114,10 @@ to verify each setting's default and the available override surface.
 | `naming.separator` | `_` | `naming.separator` | — | Filename segment joiner. |
 | `naming.lowercase` | `false` | `naming.lowercase` | — | Lowercases destination paths. |
 | `naming.episode_title_strategy` | `label` | `naming.episode_title_strategy` | — | Selects episode naming strategy. |
+| `naming.disc_directory_pattern` | `{slug}` | `naming.disc_directory_pattern` | — | Supports `{slug}`, `{index}`, `{extension}`, `{ext}` placeholders. |
+| `naming.track_filename_pattern` | `{slug}_track{index:02d}{extension}` | `naming.track_filename_pattern` | — | Customize filename structure (same placeholders as above). |
+| `metadata.placement` | `title-directory` | `metadata.placement` | — | Set to `output-root` to write metadata beside the configured output directory. |
+| `metadata.directory` | `None` | `metadata.directory` | — | Absolute directory override for metadata documents. |
 | `logging.level` | `INFO` | `logging.level` | `--verbose` | Flag forces `DEBUG` logging. |
 | `logging.file` | None | `logging.file` | `--log-file` | Optional log file path; leave unset to disable. |
 
@@ -130,6 +138,11 @@ naming:
   separator: _
   lowercase: false
   episode_title_strategy: label
+  disc_directory_pattern: "{slug}"
+  track_filename_pattern: "{slug}_track{index:02d}{extension}"
+metadata:
+  placement: title-directory
+  directory: null
 logging:
   level: INFO
   file: null
@@ -140,6 +153,12 @@ When `compression` is set to `true` the CLI logs a ready-to-run
 command automatically; it simply assembles a safe default that you can copy
 once the rip completes. Leave the option at its default of `false` to skip
 generating the compression plans.
+
+Use the `naming` patterns to reshape the directory and filename layout while
+keeping deterministic slugs. The placeholders `{slug}`, `{index}`,
+`{extension}`, and `{ext}` are available inside both patterns. To relocate
+metadata away from the title directory, set `metadata.placement` to
+`output-root` or point `metadata.directory` at an absolute path.
 
 Set `logging.file` to a writable path—or pass `--log-file` on the CLI—to mirror
 console output into a persistent log file.

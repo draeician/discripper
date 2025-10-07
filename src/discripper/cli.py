@@ -171,7 +171,30 @@ def _execute_rip_plans(
     return EXIT_SUCCESS
 
 
-def _metadata_directory_for_plans(plans: Sequence[RipPlan]) -> Path | None:
+def _metadata_directory_for_plans(
+    plans: Sequence[RipPlan], config: Mapping[str, Any]
+) -> Path | None:
+    metadata_config = config.get("metadata")
+    directory_override: Path | None = None
+    placement = "title-directory"
+
+    if isinstance(metadata_config, Mapping):
+        candidate_directory = metadata_config.get("directory")
+        if isinstance(candidate_directory, str) and candidate_directory.strip():
+            directory_override = Path(candidate_directory).expanduser()
+
+        candidate_placement = metadata_config.get("placement")
+        if isinstance(candidate_placement, str) and candidate_placement.strip():
+            placement = candidate_placement.strip().lower()
+
+    if directory_override is not None:
+        return directory_override
+
+    if placement in {"output-root", "output_directory", "root"}:
+        output_value = config.get("output_directory")
+        if isinstance(output_value, (str, Path)):
+            return Path(output_value).expanduser()
+
     for plan in plans:
         if plan.will_execute:
             return plan.destination.parent
@@ -190,7 +213,7 @@ def _emit_metadata_document(
     if config.get("dry_run", False):
         return
 
-    directory = _metadata_directory_for_plans(plans)
+    directory = _metadata_directory_for_plans(plans, config)
     if directory is None:
         return
 
