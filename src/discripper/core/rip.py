@@ -553,7 +553,7 @@ def run_rip_plan(
 def rip_disc(
     device: str | Path,
     classification: "ClassificationResult",
-    destination_factory: Callable[["TitleInfo", str | None], str | Path],
+    destination_factory: Callable[["TitleInfo", str | None, int], str | Path],
     *,
     dry_run: bool = False,
     which: Callable[[str], Optional[str]] = default_which,
@@ -575,8 +575,8 @@ def rip_disc(
         episode_codes = tuple(None for _ in episodes)
 
     plans = []
-    for title, code in zip(episodes, episode_codes):
-        destination = destination_factory(title, code)
+    for index, (title, code) in enumerate(zip(episodes, episode_codes), start=1):
+        destination = destination_factory(title, code, index)
         plans.append(
             rip_title(
                 device,

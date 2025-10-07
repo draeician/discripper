@@ -83,9 +83,11 @@ def _install_movie_pipeline(
 
     monkeypatch.setattr(cli, "classify_disc", fake_classify)
 
-    def fake_movie_output_path(title_info: TitleInfo, config: dict[str, object]) -> Path:
+    def fake_movie_output_path(
+        title_info: TitleInfo, config: dict[str, object], *, track_index: int = 1
+    ) -> Path:
         events.append(("movie_output_path", title_info.label))
-        return tmp_path / "output.mp4"
+        return tmp_path / f"output-{track_index}.mp4"
 
     monkeypatch.setattr(cli, "movie_output_path", fake_movie_output_path)
 
@@ -103,7 +105,7 @@ def _install_movie_pipeline(
         which=None,
     ) -> tuple[RipPlan, ...]:
         events.append(("rip_disc", device, dry_run))
-        destination = destination_factory(classification_value.episodes[0], None)
+        destination = destination_factory(classification_value.episodes[0], None, 1)
         plan = RipPlan(
             device=device,
             title=classification_value.episodes[0],
@@ -171,9 +173,13 @@ def _install_series_pipeline(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
         title_info: TitleInfo,
         episode_code: str,
         config: dict[str, object],
+        *,
+        track_index: int = 1,
     ) -> Path:
-        events.append(("series_output_path", series_label, episode_code, title_info.label))
-        return tmp_path / f"{episode_code}_{title_info.label}.mp4"
+        events.append(
+            ("series_output_path", series_label, episode_code, title_info.label, track_index)
+        )
+        return tmp_path / f"{track_index:02d}_{episode_code}_{title_info.label}.mp4"
 
     monkeypatch.setattr(cli, "series_output_path", fake_series_output_path)
 
@@ -187,10 +193,11 @@ def _install_series_pipeline(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     ) -> tuple[RipPlan, ...]:
         events.append(("rip_disc", device, dry_run))
         plans: list[RipPlan] = []
-        for title_info, episode_code in zip(
-            classification_value.episodes, classification_value.episode_codes
+        for index, (title_info, episode_code) in enumerate(
+            zip(classification_value.episodes, classification_value.episode_codes),
+            start=1,
         ):
-            destination = destination_factory(title_info, episode_code)
+            destination = destination_factory(title_info, episode_code, index)
             plans.append(
                 RipPlan(
                     device=device,
@@ -510,9 +517,11 @@ def test_main_simulate_uses_fixture_and_forces_dry_run(tmp_path, monkeypatch) ->
 
     monkeypatch.setattr(cli, "classify_disc", fake_classify)
 
-    def fake_movie_output_path(title_info: TitleInfo, config: dict[str, object]) -> Path:
+    def fake_movie_output_path(
+        title_info: TitleInfo, config: dict[str, object], *, track_index: int = 1
+    ) -> Path:
         events.append(("movie_output_path", title_info.label))
-        return tmp_path / "output.mp4"
+        return tmp_path / f"output-{track_index}.mp4"
 
     monkeypatch.setattr(cli, "movie_output_path", fake_movie_output_path)
 
@@ -525,7 +534,7 @@ def test_main_simulate_uses_fixture_and_forces_dry_run(tmp_path, monkeypatch) ->
         which=None,
     ) -> tuple[RipPlan, ...]:
         events.append(("rip_disc", device, dry_run))
-        destination = destination_factory(classification_value.episodes[0], None)
+        destination = destination_factory(classification_value.episodes[0], None, 1)
         return (
             RipPlan(
                 device=device,
@@ -568,7 +577,7 @@ def test_main_executes_pipeline(monkeypatch, tmp_path) -> None:
         ("classify", "Sample Disc"),
         ("rip_disc", str(device), False),
         ("movie_output_path", "Main Feature"),
-        ("run_rip_plan", tmp_path / "output.mp4"),
+        ("run_rip_plan", tmp_path / "output-1.mp4"),
     ]
 
 
@@ -593,9 +602,11 @@ def test_main_propagates_cli_title_override(monkeypatch, tmp_path) -> None:
 
     captured_titles: list[str | None] = []
 
-    def fake_movie_output_path(title_info: TitleInfo, config: dict[str, object]) -> Path:
+    def fake_movie_output_path(
+        title_info: TitleInfo, config: dict[str, object], *, track_index: int = 1
+    ) -> Path:
         captured_titles.append(config.get("title"))
-        return tmp_path / "output.mp4"
+        return tmp_path / f"output-{track_index}.mp4"
 
     monkeypatch.setattr(cli, "movie_output_path", fake_movie_output_path)
 
@@ -612,7 +623,7 @@ def test_main_propagates_cli_title_override(monkeypatch, tmp_path) -> None:
         dry_run,
         which=None,
     ) -> tuple[RipPlan, ...]:
-        destination = destination_factory(classification_value.episodes[0], None)
+        destination = destination_factory(classification_value.episodes[0], None, 1)
         plan = RipPlan(
             device=device_path,
             title=classification_value.episodes[0],
@@ -696,7 +707,7 @@ def test_main_dry_run_prints_plan(monkeypatch, tmp_path, capsys) -> None:
         dry_run,
         which=None,
     ) -> tuple[RipPlan, ...]:
-        destination = destination_factory(classification_value.episodes[0], None)
+        destination = destination_factory(classification_value.episodes[0], None, 1)
         return (
             RipPlan(
                 device=device_path,
@@ -735,12 +746,14 @@ def test_main_uses_series_output_paths_for_series_classification(
         "Sample Series",
         "s01e01",
         "Episode One",
+        1,
     ) in events
     assert (
         "series_output_path",
         "Sample Series",
         "s01e02",
         "Episode Two",
+        2,
     ) in events
     run_events = [event for event in events if event[0] == "run_rip_plan"]
     assert [entry[2] for entry in run_events] == ["s01e01", "s01e02"]

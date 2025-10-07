@@ -123,7 +123,7 @@
     - `discripper -t "The Matrix"` is accepted and propagated to the ripping workflow.
     - If no title is provided, process continues with fallback and prints which title is used.
 
-- [ ] Apply title to output naming scheme [#PX-T2]
+- [x] Apply title to output naming scheme [#PX-T2]
   - **Description:** Use the provided (or resolved) title to replace generic filenames (e.g., `title_01`) with a deterministic, slugified scheme. Default pattern:
     - `{slug}/{slug}_track{NN}.{ext}`
     - Where `{slug}` is derived from the title; `{NN}` is 2-digit track index; `{ext}` follows current container (e.g., mkv/mp4).

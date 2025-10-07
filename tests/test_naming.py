@@ -7,12 +7,6 @@ from discripper.core import (
     sanitize_component,
     series_output_path,
 )
-
-
-def custom_episode_title_strategy(title: TitleInfo, episode_code: str | None) -> str:
-    return f"Custom {title.label}"
-
-
 def test_sanitize_component_replaces_unsafe_characters() -> None:
     sanitized = sanitize_component("Firefly: Serenity/Part 1")
     assert sanitized == "Firefly_Serenity_Part_1"
@@ -48,16 +42,17 @@ def test_sanitize_component_falls_back_when_separator_invalid() -> None:
     assert sanitized == "Season_Finale"
 
 
-def test_movie_output_path_uses_configured_directory(tmp_path: Path) -> None:
+def test_movie_output_path_uses_disc_title_slug(tmp_path: Path) -> None:
     title = TitleInfo(label="The Matrix", duration=timedelta(minutes=136))
     config = {
         "output_directory": str(tmp_path / "Movies"),
-        "naming": {"separator": "-", "lowercase": True},
+        "title": "Matrix Reloaded",
     }
 
-    path = movie_output_path(title, config)
+    path = movie_output_path(title, config, track_index=2)
 
-    assert path == tmp_path / "Movies" / "the-matrix.mp4"
+    expected = tmp_path / "Movies" / "matrix-reloaded" / "matrix-reloaded_track02.mp4"
+    assert path == expected
 
 
 def test_movie_output_path_defaults_without_naming_section(tmp_path: Path) -> None:
@@ -66,24 +61,20 @@ def test_movie_output_path_defaults_without_naming_section(tmp_path: Path) -> No
 
     path = movie_output_path(title, config)
 
-    assert path.name == "Strange_Name.mp4"
+    expected = tmp_path / "strange-name" / "strange-name_track01.mp4"
+    assert path == expected
 
 
 def test_series_output_path_creates_nested_structure(tmp_path: Path) -> None:
     title = TitleInfo(label="The Long Night", duration=timedelta(minutes=52))
     config = {
         "output_directory": tmp_path / "Series",
-        "naming": {"separator": "-", "lowercase": True},
+        "title": "Game of Thrones",
     }
 
-    path = series_output_path("Game of Thrones", title, "s01e03", config)
+    path = series_output_path("Ignored", title, "s01e03", config, track_index=3)
 
-    expected = (
-        tmp_path
-        / "Series"
-        / "game-of-thrones"
-        / "game-of-thrones-s01e03_the-long-night.mp4"
-    )
+    expected = tmp_path / "Series" / "game-of-thrones" / "game-of-thrones_track03.mp4"
     assert path == expected
 
 
@@ -93,23 +84,7 @@ def test_series_output_path_defaults_without_naming_section(tmp_path: Path) -> N
 
     path = series_output_path("Strange Show", title, "s01e02", config)
 
-    assert path == tmp_path / "Strange_Show" / "Strange_Show-s01e02_Episode_2.mp4"
-
-
-def test_series_output_path_applies_lowercase_and_sanitization(tmp_path: Path) -> None:
-    title = TitleInfo(label="Épisode Finale!", duration=timedelta(minutes=58))
-    config = {
-        "output_directory": tmp_path,
-        "naming": {"separator": "-", "lowercase": True},
-    }
-
-    path = series_output_path("Série Étrange?!", title, "s02e10", config)
-
-    expected = (
-        tmp_path
-        / "serie-etrange"
-        / "serie-etrange-s02e10_episode-finale.mp4"
-    )
+    expected = tmp_path / "strange-show" / "strange-show_track01.mp4"
     assert path == expected
 
 
@@ -118,17 +93,19 @@ def test_movie_output_path_adds_suffix_when_collision(tmp_path: Path) -> None:
     config = {"output_directory": tmp_path}
 
     first = movie_output_path(title, config)
-    assert first == tmp_path / "The_Matrix.mp4"
+    expected = tmp_path / "the-matrix" / "the-matrix_track01.mp4"
+    assert first == expected
 
+    expected.parent.mkdir(parents=True, exist_ok=True)
     first.touch()
 
     second = movie_output_path(title, config)
-    assert second == tmp_path / "The_Matrix_1.mp4"
+    assert second == tmp_path / "the-matrix" / "the-matrix_track01_1.mp4"
 
     second.touch()
 
     third = movie_output_path(title, config)
-    assert third == tmp_path / "The_Matrix_2.mp4"
+    assert third == tmp_path / "the-matrix" / "the-matrix_track01_2.mp4"
 
 
 def test_series_output_path_adds_suffix_when_collision(tmp_path: Path) -> None:
@@ -136,38 +113,11 @@ def test_series_output_path_adds_suffix_when_collision(tmp_path: Path) -> None:
     config = {"output_directory": tmp_path}
 
     first = series_output_path("Example Show", title, "s01e01", config)
-    expected = tmp_path / "Example_Show" / "Example_Show-s01e01_Pilot.mp4"
+    expected = tmp_path / "example-show" / "example-show_track01.mp4"
     assert first == expected
 
     expected.parent.mkdir(parents=True, exist_ok=True)
     expected.touch()
 
     second = series_output_path("Example Show", title, "s01e01", config)
-    assert second == tmp_path / "Example_Show" / "Example_Show-s01e01_Pilot_1.mp4"
-
-
-def test_series_output_path_uses_episode_number_strategy(tmp_path: Path) -> None:
-    title = TitleInfo(label="Episode 1", duration=timedelta(minutes=44))
-    config = {
-        "output_directory": tmp_path,
-        "naming": {"episode_title_strategy": "episode-number"},
-    }
-
-    path = series_output_path("Example Show", title, "s01e05", config)
-
-    assert path == tmp_path / "Example_Show" / "Example_Show-s01e05_Episode_05.mp4"
-
-
-def test_series_output_path_supports_custom_strategy(tmp_path: Path) -> None:
-    title = TitleInfo(label="Pilot", duration=timedelta(minutes=45))
-    config = {
-        "output_directory": tmp_path,
-        "naming": {
-            "episode_title_strategy": "test_naming:custom_episode_title_strategy",
-        },
-    }
-
-    path = series_output_path("Example Show", title, "s01e01", config)
-
-    expected = tmp_path / "Example_Show" / "Example_Show-s01e01_Custom_Pilot.mp4"
-    assert path == expected
+    assert second == tmp_path / "example-show" / "example-show_track01_1.mp4"

@@ -204,26 +204,30 @@ The command prints the planned titles and destinations while leaving the filesys
 
 ## Output naming examples
 
-Run the simulation fixtures to see the sanitised filenames that `discripper` produces while respecting the PRD conventions:
+Run the simulation fixtures to see the slugged filenames that `discripper`
+produces while respecting the PRD conventions:
 
 ```bash
 bash scripts/demo.sh
 ```
 
-The default configuration targets `~/Videos`, so a movie disc resolves to:
+The default configuration targets `~/Videos`, so a movie disc resolves to the
+disc-title slug with numbered tracks:
 
 ```
-~/Videos/Main_Feature.mp4
+~/Videos/simulation-feature-film/
+└── simulation-feature-film_track01.mp4
 ```
 
-Series discs follow the `<series>/<series>-s01eNN_<title>.mp4` structure:
+Series discs follow the `{slug}/{slug}_trackNN.mp4` structure, where the slug
+comes from the provided or detected disc title:
 
 ```
-~/Videos/Simulation_Limited_Series/
-├── Simulation_Limited_Series-s01e01_Episode_3.mp4
-├── Simulation_Limited_Series-s01e02_Episode_1.mp4
-├── Simulation_Limited_Series-s01e03_Episode_2.mp4
-└── Simulation_Limited_Series-s01e04_Episode_4.mp4
+~/Videos/simulation-limited-series/
+├── simulation-limited-series_track01.mp4
+├── simulation-limited-series_track02.mp4
+├── simulation-limited-series_track03.mp4
+└── simulation-limited-series_track04.mp4
 ```
 
 These examples come directly from the `samples/simulated_*.json` fixtures and are asserted by `tests/test_samples_naming.py`, keeping the documentation in lockstep with the implementation.
