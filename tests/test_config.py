@@ -63,3 +63,24 @@ def test_load_config_validates_nested_schema(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="naming"):
         config.load_config(config_file)
+
+
+def test_load_config_overrides_metadata_and_patterns(tmp_path: Path) -> None:
+    config_file = tmp_path / "config.yaml"
+    config_file.write_text(
+        "metadata:\n"
+        "  placement: output-root\n"
+        "  directory: ~/Media/discripper\n"
+        "naming:\n"
+        "  track_filename_pattern: '{slug}-{index:02d}.{ext}'\n",
+        encoding="utf-8",
+    )
+
+    loaded = config.load_config(config_file)
+
+    assert loaded["metadata"]["placement"] == "output-root"
+    assert loaded["metadata"]["directory"] == "~/Media/discripper"
+    assert (
+        loaded["naming"]["track_filename_pattern"]
+        == "{slug}-{index:02d}.{ext}"
+    )

@@ -148,7 +148,7 @@
     - Single source-of-truth function for slug + path building.
     - No duplicate logic across modules (unit covered).
 
-- [ ] Config & defaults audit [#PX-T5]
+- [x] Config & defaults audit [#PX-T5]
   - **Description:** Add/confirm config keys in `{CONFIG_PATH}` that influence output root, metadata placement, and naming pattern overrides.
   - **Acceptance Criteria:**
     - Default behavior matches above when no overrides present.

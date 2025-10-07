@@ -150,6 +150,46 @@ def _install_movie_pipeline(
     return events
 
 
+def test_metadata_directory_for_plans_respects_override(tmp_path: Path) -> None:
+    title = TitleInfo(label="Feature", duration=timedelta(minutes=90))
+    destination = tmp_path / "slug" / "slug_track01.mp4"
+    plan = RipPlan(
+        device="/dev/sr0",
+        title=title,
+        destination=destination,
+        command=("echo",),
+        will_execute=True,
+    )
+    config = copy.deepcopy(config_module.DEFAULT_CONFIG)
+    override_dir = tmp_path / "metadata"
+    config["metadata"]["directory"] = str(override_dir)
+
+    directory = cli._metadata_directory_for_plans((plan,), config)
+
+    assert directory == override_dir
+
+
+def test_metadata_directory_for_plans_honors_output_root(tmp_path: Path) -> None:
+    title = TitleInfo(label="Feature", duration=timedelta(minutes=90))
+    destination = tmp_path / "slug" / "slug_track01.mp4"
+    plan = RipPlan(
+        device="/dev/sr0",
+        title=title,
+        destination=destination,
+        command=("echo",),
+        will_execute=True,
+    )
+    config = copy.deepcopy(config_module.DEFAULT_CONFIG)
+    output_root = tmp_path / "library"
+    config["output_directory"] = str(output_root)
+    config["metadata"]["directory"] = None
+    config["metadata"]["placement"] = "output-root"
+
+    directory = cli._metadata_directory_for_plans((plan,), config)
+
+    assert directory == output_root
+
+
 def _install_series_pipeline(monkeypatch: pytest.MonkeyPatch, tmp_path: Path):
     events: list[object] = []
     title_one = TitleInfo(label="Episode One", duration=timedelta(minutes=44))

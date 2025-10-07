@@ -25,6 +25,12 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "separator": "_",
         "lowercase": False,
         "episode_title_strategy": "label",
+        "disc_directory_pattern": "{slug}",
+        "track_filename_pattern": "{slug}_track{index:02d}{extension}",
+    },
+    "metadata": {
+        "placement": "title-directory",
+        "directory": None,
     },
     "logging": {
         "level": "INFO",
@@ -47,6 +53,12 @@ CONFIG_SCHEMA: dict[str, Any] = {
         "separator": str,
         "lowercase": bool,
         "episode_title_strategy": str,
+        "disc_directory_pattern": str,
+        "track_filename_pattern": str,
+    },
+    "metadata": {
+        "placement": str,
+        "directory": (str, type(None)),
     },
     "logging": {
         "level": (str, int),

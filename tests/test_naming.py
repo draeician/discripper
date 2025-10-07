@@ -1,6 +1,8 @@
+from copy import deepcopy
 from datetime import timedelta
 from pathlib import Path
 
+from discripper import config as config_module
 from discripper.core import (
     DiscInfo,
     TitleInfo,
@@ -124,6 +126,19 @@ def test_series_output_path_adds_suffix_when_collision(tmp_path: Path) -> None:
 
     second = series_output_path("Example Show", title, "s01e01", config)
     assert second == tmp_path / "example-show" / "example-show_track01_1.mp4"
+
+
+def test_movie_output_path_honors_custom_patterns(tmp_path: Path) -> None:
+    title = TitleInfo(label="The Matrix", duration=timedelta(minutes=136))
+    config = deepcopy(config_module.DEFAULT_CONFIG)
+    config["output_directory"] = str(tmp_path)
+    config["naming"]["disc_directory_pattern"] = "custom/{slug}"
+    config["naming"]["track_filename_pattern"] = "{slug}-{index:03d}.{ext}"
+
+    path = movie_output_path(title, config, track_index=5)
+
+    expected = tmp_path / "custom" / "the-matrix" / "the-matrix-005.mp4"
+    assert path == expected
 
 
 def test_select_disc_title_prefers_cli_override() -> None:

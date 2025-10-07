@@ -25,6 +25,8 @@ _SAFE_CHARS = set(string.ascii_letters + string.digits)
 _FALLBACK_NAME = "untitled"
 _FALLBACK_SEPARATOR = "_"
 _SLUG_SEPARATOR = "-"
+_DEFAULT_DIRECTORY_PATTERN = "{slug}"
+_DEFAULT_FILENAME_PATTERN = "{slug}_track{index:02d}{extension}"
 _EPISODE_CODE_PATTERN = re.compile(r"s(?P<season>\d+)e(?P<episode>\d+)", re.IGNORECASE)
 
 TITLE_SOURCE_KEY = "_title_source"
@@ -284,6 +286,43 @@ def _disc_slug_from_config(config: Mapping[str, object], fallback: str) -> str:
     return _slugify_title(fallback)
 
 
+def _naming_patterns(config: Mapping[str, object]) -> tuple[str, str]:
+    directory_pattern = _DEFAULT_DIRECTORY_PATTERN
+    filename_pattern = _DEFAULT_FILENAME_PATTERN
+
+    naming_config = config.get("naming")
+    if isinstance(naming_config, Mapping):
+        directory_candidate = naming_config.get("disc_directory_pattern")
+        if isinstance(directory_candidate, str) and directory_candidate.strip():
+            directory_pattern = directory_candidate
+
+        filename_candidate = naming_config.get("track_filename_pattern")
+        if isinstance(filename_candidate, str) and filename_candidate.strip():
+            filename_pattern = filename_candidate
+
+    return directory_pattern, filename_pattern
+
+
+def _render_pattern(pattern: str, *, slug: str, index: int, extension: str) -> str:
+    ext = extension[1:] if extension.startswith(".") else extension
+    try:
+        rendered = pattern.format(slug=slug, index=index, extension=extension, ext=ext)
+    except KeyError as exc:  # pragma: no cover - defensive, validated via tests
+        missing = exc.args[0]
+        raise ValueError(
+            (
+                "Naming pattern must use only the placeholders 'slug', 'index', "
+                f"'extension', or 'ext'. Missing: {missing!r}."
+            )
+        ) from exc
+
+    normalized = rendered.strip()
+    if not normalized:
+        raise ValueError("Naming pattern rendered an empty value")
+
+    return normalized
+
+
 def _build_slugged_path(
     slug: str,
     *,
@@ -291,8 +330,24 @@ def _build_slugged_path(
     config: Mapping[str, object],
     extension: str = ".mp4",
 ) -> Path:
-    directory = _output_directory_from_config(config) / slug
-    filename = f"{slug}_track{track_index:02d}{extension}"
+    directory_pattern, filename_pattern = _naming_patterns(config)
+
+    directory_segment = _render_pattern(
+        directory_pattern,
+        slug=slug,
+        index=track_index,
+        extension=extension,
+    )
+    filename = _render_pattern(
+        filename_pattern,
+        slug=slug,
+        index=track_index,
+        extension=extension,
+    )
+
+    output_root = _output_directory_from_config(config)
+    directory = (output_root / directory_segment).expanduser()
+
     return _ensure_unique_path(directory / filename)
 
 
