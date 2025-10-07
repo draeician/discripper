@@ -36,6 +36,9 @@ from .core import (
 logger = logging.getLogger(__name__)
 
 
+_UNTITLED_FALLBACK = "untitled"
+
+
 # Exit code definitions.  These mirror the expectations outlined in the PRD
 # and keep :func:`main` readable when returning early.  The values are
 # intentionally small integers so they map cleanly onto the shell's exit status
@@ -104,6 +107,22 @@ def _plan_rips(
         destination_factory,
         dry_run=dry_run,
     )
+
+
+def _select_disc_title(config: Mapping[str, Any], disc: DiscInfo) -> tuple[str, str]:
+    """Return the title string and its source for the current execution."""
+
+    configured = config.get("title")
+    if isinstance(configured, str):
+        normalized = configured.strip()
+        if normalized:
+            return normalized, "cli"
+
+    normalized_label = disc.label.strip()
+    if normalized_label:
+        return normalized_label, "disc-label"
+
+    return _UNTITLED_FALLBACK, "fallback"
 
 
 def _compression_output_path(path: Path) -> Path:
@@ -191,6 +210,12 @@ def build_argument_parser() -> argparse.ArgumentParser:
         help="Perform a dry run without executing side effects.",
     )
     parser.add_argument(
+        "-t",
+        "--title",
+        dest="title",
+        help="Override the detected disc title used for planning and naming.",
+    )
+    parser.add_argument(
         "--log-file",
         dest="log_file",
         help="Path to a file where logs should also be written.",
@@ -275,6 +300,12 @@ def resolve_cli_config(args: argparse.Namespace) -> dict[str, Any]:
     if args.dry_run:
         config["dry_run"] = True
 
+    title_override = getattr(args, "title", None)
+    if isinstance(title_override, str):
+        normalized_title = title_override.strip()
+        if normalized_title:
+            config["title"] = normalized_title
+
     return config
 
 
@@ -337,6 +368,14 @@ def _run_main(argv: Sequence[str] | None = None) -> int:
         except Exception as exc:  # pragma: no cover - defensive
             _print_error(f"Failed to inspect disc: {exc}")
             return EXIT_DISC_NOT_DETECTED
+
+    selected_title, title_source = _select_disc_title(config, disc)
+    config["title"] = selected_title
+    logger.info(
+        'EVENT=TITLE_SELECTED SOURCE=%s TITLE="%s"',
+        title_source,
+        selected_title,
+    )
 
     thresholds = thresholds_from_config(config)
     classification = classify_disc(disc, thresholds=thresholds)

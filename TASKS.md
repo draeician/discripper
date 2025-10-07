@@ -116,7 +116,7 @@
 
 ## Phase X – Title-aware Ripping & Metadata JSON
 
-- [ ] Add CLI flag for human title `--title` / `-t` [#PX-T1]
+- [x] Add CLI flag for human title `--title` / `-t` [#PX-T1]
   - **Description:** Extend `{ENTRYPOINT}` CLI to accept an optional `--title` (string). If omitted, attempt a sensible fallback (e.g., disc label or existing auto-detect) without failing the run.
   - **Acceptance Criteria:**
     - Running `discripper --help` documents `--title/-t`.
