@@ -10,16 +10,24 @@ from typing import TYPE_CHECKING, Callable, Mapping
 import string
 import unicodedata
 
-__all__ = ["sanitize_component", "movie_output_path", "series_output_path"]
+__all__ = [
+    "sanitize_component",
+    "movie_output_path",
+    "series_output_path",
+    "select_disc_title",
+    "TITLE_SOURCE_KEY",
+]
 
 if TYPE_CHECKING:  # pragma: no cover - used for type checking only
-    from . import TitleInfo
+    from . import DiscInfo, TitleInfo
 
 _SAFE_CHARS = set(string.ascii_letters + string.digits)
 _FALLBACK_NAME = "untitled"
 _FALLBACK_SEPARATOR = "_"
 _SLUG_SEPARATOR = "-"
 _EPISODE_CODE_PATTERN = re.compile(r"s(?P<season>\d+)e(?P<episode>\d+)", re.IGNORECASE)
+
+TITLE_SOURCE_KEY = "_title_source"
 
 EpisodeTitleStrategy = Callable[["TitleInfo", str | None], str]
 
@@ -322,3 +330,33 @@ def series_output_path(
 
     slug = _disc_slug_from_config(config, series_label)
     return _build_slugged_path(slug, track_index=track_index, config=config)
+
+
+def select_disc_title(
+    config: Mapping[str, object],
+    disc: "DiscInfo",
+) -> tuple[str, str]:
+    """Return the effective disc title and its provenance.
+
+    The helper inspects the configuration for a ``title`` override and normalizes
+    it. When present, it is treated as the authoritative value and the source is
+    derived from :data:`TITLE_SOURCE_KEY` when available. When no override exists
+    (or it is empty), the disc label is used as a fallback. Ultimately the
+    function always returns a non-empty ASCII-safe string so downstream naming
+    utilities can rely on deterministic behaviour.
+    """
+
+    configured = config.get("title")
+    if isinstance(configured, str):
+        normalized = configured.strip()
+        if normalized:
+            source = config.get(TITLE_SOURCE_KEY)
+            if isinstance(source, str) and source.strip():
+                return normalized, source
+            return normalized, "config"
+
+    label = disc.label.strip()
+    if label:
+        return label, "disc-label"
+
+    return _FALLBACK_NAME, "fallback"

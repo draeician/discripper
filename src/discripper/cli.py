@@ -26,19 +26,17 @@ from .core import (
     inspect_from_fixture,
     inspect_with_ffprobe,
     movie_output_path,
+    select_disc_title,
     rip_disc,
     run_rip_plan,
     series_output_path,
+    TITLE_SOURCE_KEY,
     thresholds_from_config,
 )
 from .core.metadata_json import build_metadata_document, write_metadata_document
 
 
 logger = logging.getLogger(__name__)
-
-
-_UNTITLED_FALLBACK = "untitled"
-
 
 # Exit code definitions.  These mirror the expectations outlined in the PRD
 # and keep :func:`main` readable when returning early.  The values are
@@ -114,22 +112,6 @@ def _plan_rips(
         destination_factory,
         dry_run=dry_run,
     )
-
-
-def _select_disc_title(config: Mapping[str, Any], disc: DiscInfo) -> tuple[str, str]:
-    """Return the title string and its source for the current execution."""
-
-    configured = config.get("title")
-    if isinstance(configured, str):
-        normalized = configured.strip()
-        if normalized:
-            return normalized, "cli"
-
-    normalized_label = disc.label.strip()
-    if normalized_label:
-        return normalized_label, "disc-label"
-
-    return _UNTITLED_FALLBACK, "fallback"
 
 
 def _compression_output_path(path: Path) -> Path:
@@ -344,6 +326,22 @@ def resolve_cli_config(args: argparse.Namespace) -> dict[str, Any]:
 
     config = load_config(args.config_path)
 
+    title_source: str | None = None
+    existing_title = config.get("title")
+    if isinstance(existing_title, str):
+        normalized_existing = existing_title.strip()
+        if normalized_existing:
+            config["title"] = normalized_existing
+            existing_source = config.get(TITLE_SOURCE_KEY)
+            if isinstance(existing_source, str) and existing_source.strip():
+                title_source = existing_source.strip()
+            else:
+                title_source = "config"
+        else:
+            config.pop("title", None)
+    else:
+        config.pop("title", None)
+
     config["device"] = args.device
 
     if getattr(args, "simulate", None):
@@ -363,6 +361,12 @@ def resolve_cli_config(args: argparse.Namespace) -> dict[str, Any]:
         normalized_title = title_override.strip()
         if normalized_title:
             config["title"] = normalized_title
+            title_source = "cli"
+
+    if title_source:
+        config[TITLE_SOURCE_KEY] = title_source
+    else:
+        config.pop(TITLE_SOURCE_KEY, None)
 
     return config
 
@@ -427,8 +431,9 @@ def _run_main(argv: Sequence[str] | None = None) -> int:
             _print_error(f"Failed to inspect disc: {exc}")
             return EXIT_DISC_NOT_DETECTED
 
-    selected_title, title_source = _select_disc_title(config, disc)
+    selected_title, title_source = select_disc_title(config, disc)
     config["title"] = selected_title
+    config[TITLE_SOURCE_KEY] = title_source
     logger.info(
         'EVENT=TITLE_SELECTED SOURCE=%s TITLE="%s"',
         title_source,
