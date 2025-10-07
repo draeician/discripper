@@ -30,16 +30,6 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "level": "INFO",
         "file": None,
     },
-    "metadata": {
-        "menu_ocr": {
-            "enabled": False,
-            "backend": "tesseract",
-            "language": "eng",
-            "confidence_threshold": 0.6,
-            "frame_sample_interval": 5,
-            "max_regions": 5,
-        },
-    },
 }
 
 CONFIG_SCHEMA: dict[str, Any] = {
@@ -61,16 +51,6 @@ CONFIG_SCHEMA: dict[str, Any] = {
     "logging": {
         "level": (str, int),
         "file": (str, type(None)),
-    },
-    "metadata": {
-        "menu_ocr": {
-            "enabled": bool,
-            "backend": str,
-            "language": str,
-            "confidence_threshold": (int, float),
-            "frame_sample_interval": (int, float),
-            "max_regions": (int, float),
-        },
     },
 }
 
