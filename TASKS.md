@@ -113,14 +113,6 @@
 
 ## Phase 15 – Follow-up Improvements
 - [x] Implement optional log file support per PRD Section 8 (configurable path + CLI flag) [#P15-T1]
-- [ ] Extend metadata config for optional menu OCR enrichment (schema, defaults, tests) [#P15-T2]
-- [ ] Build core menu OCR module with frame sampling, OCR backend integration, and structured logs (module returns labels) [#P15-T3]
-- [ ] Implement per-disc OCR label cache with modes and persistence under XDG cache (cache hit/miss verified) [#P15-T4]
-- [ ] Enrich DiscInfo/TitleInfo structures to carry OCR-derived labels alongside existing metadata (dataclasses updated) [#P15-T5]
-- [ ] Integrate OCR enrichment into CLI flow with flags, time budget, failure fallbacks, and sidecar outputs (end-to-end path tested) [#P15-T6]
-- [ ] Update naming helpers to leverage OCR labels above confidence threshold with fallback behavior (naming tests updated) [#P15-T7]
-- [ ] Add unit tests for OCR config, pipeline, caching, logging, and label mapping behaviors (pytest suite passing) [#P15-T8]
-- [ ] Document OCR enrichment usage, configuration, and cache/log interpretation in README and docs (docs updated) [#P15-T9]
 
 ## Phase X – Title-aware Ripping & Metadata JSON
 
