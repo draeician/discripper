@@ -390,6 +390,16 @@ def test_resolve_cli_config_layers_defaults_config_cli(
     assert resolved_cli["logging"]["file"] == "cli.log"
 
 
+def test_resolve_cli_config_includes_title_override(tmp_path: Path) -> None:
+    """--title is captured in the resolved configuration when provided."""
+
+    args = cli.parse_arguments(["-t", "The Matrix"])
+
+    resolved = cli.resolve_cli_config(args)
+
+    assert resolved["title"] == "The Matrix"
+
+
 def test_cli_help_mentions_device_default() -> None:
     """The help output mentions the default device path."""
 
@@ -413,6 +423,7 @@ def test_cli_main_help_output_lists_expected_options(capsys) -> None:
     assert "--verbose" in captured
     assert "--dry-run" in captured
     assert "--log-file" in captured
+    assert "-t TITLE, --title TITLE" in captured
 
 
 def test_configure_logging_writes_to_file(tmp_path) -> None:
@@ -561,6 +572,65 @@ def test_main_executes_pipeline(monkeypatch, tmp_path) -> None:
     ]
 
 
+def test_main_propagates_cli_title_override(monkeypatch, tmp_path) -> None:
+    """A manually supplied title is available to the ripping workflow."""
+
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
+
+    title = TitleInfo(label="Main Feature", duration=timedelta(minutes=95))
+    disc = DiscInfo(label="Sample Disc", titles=(title,))
+    classification = ClassificationResult("movie", (title,))
+    tools = InspectionTools(
+        dvd=ToolAvailability("lsdvd", "/usr/bin/lsdvd"),
+        fallback=None,
+        blu_ray=None,
+    )
+
+    monkeypatch.setattr(cli, "discover_inspection_tools", lambda: tools)
+    monkeypatch.setattr(cli, "inspect_dvd", lambda *_args, **_kwargs: disc)
+    monkeypatch.setattr(cli, "classify_disc", lambda *_args, **_kwargs: classification)
+
+    captured_titles: list[str | None] = []
+
+    def fake_movie_output_path(title_info: TitleInfo, config: dict[str, object]) -> Path:
+        captured_titles.append(config.get("title"))
+        return tmp_path / "output.mp4"
+
+    monkeypatch.setattr(cli, "movie_output_path", fake_movie_output_path)
+
+    def unexpected_series_output_path(*_args, **_kwargs):
+        raise AssertionError("Series output path should not be used for movie plans")
+
+    monkeypatch.setattr(cli, "series_output_path", unexpected_series_output_path)
+
+    def fake_rip_disc(
+        device_path,
+        classification_value,
+        destination_factory,
+        *,
+        dry_run,
+        which=None,
+    ) -> tuple[RipPlan, ...]:
+        destination = destination_factory(classification_value.episodes[0], None)
+        plan = RipPlan(
+            device=device_path,
+            title=classification_value.episodes[0],
+            destination=Path(destination),
+            command=("echo", "rip"),
+            will_execute=not dry_run,
+        )
+        return (plan,)
+
+    monkeypatch.setattr(cli, "rip_disc", fake_rip_disc)
+    monkeypatch.setattr(cli, "run_rip_plan", lambda _plan: None)
+
+    exit_code = cli.main(["-t", "The Matrix", str(device)])
+
+    assert exit_code == cli.EXIT_SUCCESS
+    assert captured_titles == ["The Matrix"]
+
+
 def test_main_uses_fallback_inspector_when_dvd_missing(monkeypatch, tmp_path) -> None:
     """When :command:`lsdvd` is unavailable, the CLI falls back to ffprobe."""
 
@@ -701,6 +771,24 @@ def test_main_logs_structured_classification_summary(monkeypatch, tmp_path) -> N
     assert (
         "EVENT=CLASSIFIED TYPE=series EPISODES=2 LABEL=\"Sample Series\""
         in messages
+    )
+
+
+def test_main_logs_fallback_title_selection(monkeypatch, tmp_path, capsys) -> None:
+    """When no title override is provided the fallback title is announced."""
+
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
+
+    _install_movie_pipeline(monkeypatch, tmp_path)
+
+    exit_code = cli.main([str(device)])
+
+    assert exit_code == cli.EXIT_SUCCESS
+
+    captured = capsys.readouterr()
+    assert (
+        "EVENT=TITLE_SELECTED SOURCE=disc-label TITLE=\"Sample Disc\"" in captured.err
     )
 
 
