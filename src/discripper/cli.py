@@ -31,6 +31,7 @@ from .core import (
     series_output_path,
     thresholds_from_config,
 )
+from .core.metadata_json import build_metadata_document, write_metadata_document
 
 
 logger = logging.getLogger(__name__)
@@ -186,6 +187,57 @@ def _execute_rip_plans(
                     plan, executed=bool(plan.will_execute and result is not None)
                 )
     return EXIT_SUCCESS
+
+
+def _metadata_directory_for_plans(plans: Sequence[RipPlan]) -> Path | None:
+    for plan in plans:
+        if plan.will_execute:
+            return plan.destination.parent
+    return None
+
+
+def _emit_metadata_document(
+    disc: DiscInfo,
+    classification: ClassificationResult,
+    plans: Sequence[RipPlan],
+    config: Mapping[str, Any],
+) -> None:
+    if not plans:
+        return
+
+    if config.get("dry_run", False):
+        return
+
+    directory = _metadata_directory_for_plans(plans)
+    if directory is None:
+        return
+
+    try:
+        document = build_metadata_document(
+            disc,
+            classification,
+            plans,
+            config=config,
+        )
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning(
+            "Failed to collect metadata for JSON export: %s",
+            exc,
+            exc_info=logger.isEnabledFor(logging.DEBUG),
+        )
+        return
+
+    try:
+        path = write_metadata_document(document, directory)
+    except Exception as exc:  # pragma: no cover - defensive
+        logger.warning(
+            "Failed to write metadata JSON: %s",
+            exc,
+            exc_info=logger.isEnabledFor(logging.DEBUG),
+        )
+        return
+
+    logger.info('EVENT=METADATA_WRITTEN FILE="%s"', path)
 
 
 def build_argument_parser() -> argparse.ArgumentParser:
@@ -404,10 +456,15 @@ def _run_main(argv: Sequence[str] | None = None) -> int:
         _print_error(f"Failed to prepare rip plan: {exc}")
         return EXIT_UNEXPECTED_ERROR
 
-    return _execute_rip_plans(
+    exit_code = _execute_rip_plans(
         plans,
         enable_compression=bool(config.get("compression", False)),
     )
+
+    if exit_code == EXIT_SUCCESS:
+        _emit_metadata_document(disc, classification, plans, config)
+
+    return exit_code
 
 
 def _handle_unexpected_exception(exc: Exception) -> int:

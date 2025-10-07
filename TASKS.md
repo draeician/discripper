@@ -132,7 +132,7 @@
     - Slug rules documented (spaces → `-`, lowercased, non-alnum removed except `-` and `_`).
     - Configurable root output directory respected (from `{CONFIG_PATH}` if applicable).
 
-- [ ] Extract disc & stream metadata to JSON [#PX-T3]
+- [x] Extract disc & stream metadata to JSON [#PX-T3]
   - **Description:** After rip, generate `metadata.json` adjacent to outputs capturing:
     - Disc-level: volume label, disc ID/identifier (if available), rip timestamp, tool versions.
     - Title/track list with: index, duration, container, video/audio codec(s), bitrate(s), resolution, framerate, chapter count/map, file size (if post-rip), and any language/subtitle tracks.

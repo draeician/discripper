@@ -8,6 +8,8 @@ from datetime import timedelta
 from pathlib import Path
 from subprocess import CompletedProcess
 
+from typing import Mapping, Sequence
+
 import pytest
 import yaml
 
@@ -124,6 +126,24 @@ def _install_movie_pipeline(
         return None
 
     monkeypatch.setattr(cli, "run_rip_plan", fake_run)
+
+    def fake_emit_metadata(
+        disc_value: DiscInfo,
+        classification_value: ClassificationResult,
+        plans_value: Sequence[RipPlan],
+        config_value: Mapping[str, object],
+    ) -> None:
+        if config_value.get("dry_run", False):
+            return
+        events.append(
+            (
+                "metadata",
+                [plan.destination for plan in plans_value],
+                config_value.get("dry_run", False),
+            )
+        )
+
+    monkeypatch.setattr(cli, "_emit_metadata_document", fake_emit_metadata)
 
     return events
 
@@ -578,6 +598,11 @@ def test_main_executes_pipeline(monkeypatch, tmp_path) -> None:
         ("rip_disc", str(device), False),
         ("movie_output_path", "Main Feature"),
         ("run_rip_plan", tmp_path / "output-1.mp4"),
+        (
+            "metadata",
+            [tmp_path / "output-1.mp4"],
+            False,
+        ),
     ]
 
 
