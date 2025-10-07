@@ -154,7 +154,7 @@
     - Default behavior matches above when no overrides present.
     - Overrides documented in `project_spec.md` (if present) or `README.md`.
 
-- [ ] Tests for CLI, naming, and metadata JSON [#PX-T6]
+- [x] Tests for CLI, naming, and metadata JSON [#PX-T6]
   - **Description:** Add unit tests for slug rules, filename rendering, and JSON writer; add at least one integration-style test that mocks a rip result.
   - **Acceptance Criteria:**
     - Tests run locally and in CI; cover error handling (no title, invalid title, missing metadata fields).

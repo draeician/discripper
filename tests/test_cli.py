@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 import logging
 import json
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from subprocess import CompletedProcess
 
@@ -823,6 +823,126 @@ def test_main_dry_run_prints_plan(monkeypatch, tmp_path, capsys) -> None:
 
     captured = capsys.readouterr().out
     assert "[dry-run] Would execute: echo rip" in captured
+
+
+def test_main_writes_metadata_json_for_successful_plan(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """A full run writes metadata JSON using the rip results."""
+
+    device = tmp_path / "device"
+    device.write_text("ready", encoding="utf-8")
+
+    title = TitleInfo(label="Main Feature", duration=timedelta(minutes=95))
+    disc = DiscInfo(label="Sample Disc", titles=(title,))
+    classification = ClassificationResult("movie", (title,))
+
+    tools = InspectionTools(
+        dvd=ToolAvailability("lsdvd", "/usr/bin/lsdvd"),
+        fallback=None,
+        blu_ray=None,
+    )
+
+    monkeypatch.setattr(cli, "discover_inspection_tools", lambda: tools)
+    monkeypatch.setattr(cli, "inspect_dvd", lambda *_args, **_kwargs: disc)
+    monkeypatch.setattr(cli, "classify_disc", lambda *_args, **_kwargs: classification)
+
+    destination = tmp_path / "library" / "custom_track01.mp4"
+
+    def fake_movie_output_path(
+        title_info: TitleInfo, config: Mapping[str, object], *, track_index: int = 1
+    ) -> Path:
+        assert track_index == 1
+        return destination
+
+    monkeypatch.setattr(cli, "movie_output_path", fake_movie_output_path)
+
+    def unexpected_series_output_path(*_args, **_kwargs):  # pragma: no cover - guard
+        raise AssertionError("Series output path should not be used for movie plan")
+
+    monkeypatch.setattr(cli, "series_output_path", unexpected_series_output_path)
+
+    def fake_rip_disc(
+        device_path,
+        classification_value,
+        destination_factory,
+        *,
+        dry_run,
+        which=None,
+    ) -> tuple[RipPlan, ...]:
+        assert dry_run is False
+        resolved = destination_factory(classification_value.episodes[0], None, 1)
+        plan = RipPlan(
+            device=str(device_path),
+            title=classification_value.episodes[0],
+            destination=Path(resolved),
+            command=("ffmpeg", "-i", str(device_path), str(resolved)),
+            will_execute=True,
+        )
+        return (plan,)
+
+    monkeypatch.setattr(cli, "rip_disc", fake_rip_disc)
+
+    def fake_run_rip_plan(plan: RipPlan):
+        plan.destination.parent.mkdir(parents=True, exist_ok=True)
+        plan.destination.write_bytes(b"video")
+        return None
+
+    monkeypatch.setattr(cli, "run_rip_plan", fake_run_rip_plan)
+
+    original_builder = cli.build_metadata_document
+
+    def build_metadata_document(
+        disc_value,
+        classification_value,
+        plans_value,
+        *,
+        config,
+    ) -> dict[str, object]:
+        return original_builder(
+            disc_value,
+            classification_value,
+            plans_value,
+            config=config,
+            which=lambda _name: "ffprobe",
+            ffprobe_runner=lambda command, **_kwargs: CompletedProcess(
+                command,
+                0,
+                stdout=json.dumps({"streams": [{"codec_type": "audio"}]}),
+                stderr="",
+            ),
+            version_runner=lambda command, **_kwargs: CompletedProcess(
+                command, 0, stdout=f"{command[0]} version\n", stderr=""
+            ),
+            now=lambda: datetime(2024, 9, 1, tzinfo=timezone.utc),
+        )
+
+    monkeypatch.setattr(cli, "build_metadata_document", build_metadata_document)
+
+    exit_code = cli.main([str(device)])
+
+    assert exit_code == cli.EXIT_SUCCESS
+
+    metadata_path = destination.parent / "metadata.json"
+    assert metadata_path.exists()
+
+    document = json.loads(metadata_path.read_text(encoding="utf-8"))
+    assert document["title"] == "Sample Disc"
+    assert document["tracks"][0]["output"]["exists"] is True
+    assert document["tracks"][0]["output"]["size_bytes"] == destination.stat().st_size
+    assert document["tracks"][0]["streams"] == [
+        {
+            "type": "audio",
+            "index": None,
+            "codec": None,
+            "codec_long": None,
+            "bit_rate": None,
+            "language": None,
+            "channels": None,
+            "channel_layout": None,
+            "sample_rate": None,
+        }
+    ]
 
 
 def test_main_uses_series_output_paths_for_series_classification(

@@ -140,3 +140,77 @@ def test_write_metadata_document_persists_json(tmp_path: Path) -> None:
     assert path.name == "metadata.json"
     loaded = json.loads(path.read_text(encoding="utf-8"))
     assert loaded == document
+
+
+def test_build_metadata_document_handles_missing_metadata(tmp_path: Path) -> None:
+    title = TitleInfo(
+        label="Feature",
+        duration=timedelta(minutes=90),
+        chapters=(timedelta(minutes=5),),
+    )
+    disc = DiscInfo(label="Sparse Disc", titles=(title,))
+    classification = ClassificationResult("movie", (title,))
+
+    destination = tmp_path / "slug" / "slug_track01.mp4"
+    destination.parent.mkdir(parents=True)
+    destination.write_bytes(b"data")
+
+    plan = RipPlan(
+        device="/dev/sr0",
+        title=title,
+        destination=destination,
+        command=("ffmpeg", "-i", "/dev/sr0", str(destination)),
+        will_execute=True,
+    )
+
+    def incomplete_ffprobe(command: tuple[str, ...], **_kwargs) -> CompletedProcess[str]:
+        assert command[0] == "ffprobe"
+        payload = {"streams": [{"codec_type": "audio"}]}
+        return CompletedProcess(command, 0, stdout=json.dumps(payload), stderr="")
+
+    document = build_metadata_document(
+        disc,
+        classification,
+        (plan,),
+        config={},
+        which=lambda name: "ffprobe" if name == "ffprobe" else None,
+        ffprobe_runner=incomplete_ffprobe,
+        version_runner=_fake_version_runner,
+        now=lambda: datetime(2024, 7, 1, tzinfo=timezone.utc),
+    )
+
+    track = document["tracks"][0]
+    assert track["format"] == {}
+    assert track["streams"] == [
+        {
+            "type": "audio",
+            "index": None,
+            "codec": None,
+            "codec_long": None,
+            "bit_rate": None,
+            "language": None,
+            "channels": None,
+            "channel_layout": None,
+            "sample_rate": None,
+        }
+    ]
+    assert track["output"]["exists"] is True
+
+
+def test_write_metadata_document_creates_parent_directories(tmp_path: Path) -> None:
+    document = {
+        "generated_at": datetime(2024, 8, 1, tzinfo=timezone.utc).isoformat(),
+        "disc": {"label": "Sample", "id": None},
+        "classification": {"type": "movie", "episode_count": 0},
+        "title": None,
+        "output_root": None,
+        "tools": {},
+        "tracks": [],
+    }
+
+    target_dir = tmp_path / "nested" / "metadata"
+
+    path = write_metadata_document(document, target_dir)
+
+    assert path.exists()
+    assert path.parent == target_dir

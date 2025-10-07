@@ -2,6 +2,8 @@ from copy import deepcopy
 from datetime import timedelta
 from pathlib import Path
 
+import pytest
+
 from discripper import config as config_module
 from discripper.core import (
     DiscInfo,
@@ -139,6 +141,50 @@ def test_movie_output_path_honors_custom_patterns(tmp_path: Path) -> None:
 
     expected = tmp_path / "custom" / "the-matrix" / "the-matrix-005.mp4"
     assert path == expected
+
+
+def test_movie_output_path_slugifies_complex_override(tmp_path: Path) -> None:
+    title = TitleInfo(label="Ignored", duration=timedelta(minutes=120))
+    config = {"output_directory": tmp_path, "title": "  À la mode: Director's_Cut!!!  "}
+
+    path = movie_output_path(title, config)
+
+    expected = (
+        tmp_path
+        / "a-la-mode-director-s_cut"
+        / "a-la-mode-director-s_cut_track01.mp4"
+    )
+    assert path == expected
+
+
+def test_movie_output_path_falls_back_when_override_invalid(tmp_path: Path) -> None:
+    title = TitleInfo(label="Fallback Label", duration=timedelta(minutes=80))
+    config = {"output_directory": tmp_path, "title": "@@@@@"}
+
+    path = movie_output_path(title, config)
+
+    expected = tmp_path / "untitled" / "untitled_track01.mp4"
+    assert path == expected
+
+
+def test_movie_output_path_uses_fallback_when_labels_empty(tmp_path: Path) -> None:
+    title = TitleInfo(label="   ", duration=timedelta(minutes=75))
+    config = {"output_directory": tmp_path}
+
+    path = movie_output_path(title, config)
+
+    expected = tmp_path / "untitled" / "untitled_track01.mp4"
+    assert path == expected
+
+
+def test_movie_output_path_raises_for_unknown_pattern_placeholder(tmp_path: Path) -> None:
+    title = TitleInfo(label="Feature", duration=timedelta(minutes=110))
+    config = deepcopy(config_module.DEFAULT_CONFIG)
+    config["output_directory"] = str(tmp_path)
+    config["naming"]["track_filename_pattern"] = "{slug}_{missing}"
+
+    with pytest.raises(ValueError):
+        movie_output_path(title, config)
 
 
 def test_select_disc_title_prefers_cli_override() -> None:
