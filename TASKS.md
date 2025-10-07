@@ -160,7 +160,7 @@
     - Tests run locally and in CI; cover error handling (no title, invalid title, missing metadata fields).
     - Snapshot or schema validation for `metadata.json`.
 
-- [ ] Docs & help text updates [#PX-T7]
+- [x] Docs & help text updates [#PX-T7]
   - **Description:** Update `README.md` / usage docs to show examples with `--title`; add `docs/metadata-schema.md` describing JSON structure with example.
   - **Acceptance Criteria:**
     - `README.md` includes: quickstart, `--title` example, sample output tree, and sample `metadata.json` snippet.
