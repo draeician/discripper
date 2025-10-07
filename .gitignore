@@ -24,3 +24,5 @@ htmlcov/
 
 # Cursor specific
 .cursor/rules/*.mdc
+
+.invisible/
