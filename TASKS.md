@@ -121,3 +121,66 @@
 - [ ] Update naming helpers to leverage OCR labels above confidence threshold with fallback behavior (naming tests updated) [#P15-T7]
 - [ ] Add unit tests for OCR config, pipeline, caching, logging, and label mapping behaviors (pytest suite passing) [#P15-T8]
 - [ ] Document OCR enrichment usage, configuration, and cache/log interpretation in README and docs (docs updated) [#P15-T9]
+
+## Phase X – Title-aware Ripping & Metadata JSON
+
+- [ ] Add CLI flag for human title `--title` / `-t` [#PX-T1]
+  - **Description:** Extend `{ENTRYPOINT}` CLI to accept an optional `--title` (string). If omitted, attempt a sensible fallback (e.g., disc label or existing auto-detect) without failing the run.
+  - **Acceptance Criteria:**
+    - Running `discripper --help` documents `--title/-t`.
+    - `discripper -t "The Matrix"` is accepted and propagated to the ripping workflow.
+    - If no title is provided, process continues with fallback and prints which title is used.
+
+- [ ] Apply title to output naming scheme [#PX-T2]
+  - **Description:** Use the provided (or resolved) title to replace generic filenames (e.g., `title_01`) with a deterministic, slugified scheme. Default pattern:
+    - `{slug}/{slug}_track{NN}.{ext}`
+    - Where `{slug}` is derived from the title; `{NN}` is 2-digit track index; `{ext}` follows current container (e.g., mkv/mp4).
+  - **Acceptance Criteria:**
+    - If `-t "The Matrix"`, outputs resemble: `the-matrix/the-matrix_track01.mkv`, `the-matrix/the-matrix_track02.mkv`, etc.
+    - Slug rules documented (spaces → `-`, lowercased, non-alnum removed except `-` and `_`).
+    - Configurable root output directory respected (from `{CONFIG_PATH}` if applicable).
+
+- [ ] Extract disc & stream metadata to JSON [#PX-T3]
+  - **Description:** After rip, generate `metadata.json` adjacent to outputs capturing:
+    - Disc-level: volume label, disc ID/identifier (if available), rip timestamp, tool versions.
+    - Title/track list with: index, duration, container, video/audio codec(s), bitrate(s), resolution, framerate, chapter count/map, file size (if post-rip), and any language/subtitle tracks.
+  - **Acceptance Criteria:**
+    - `metadata.json` written in the same output root or `{slug}/metadata.json`.
+    - Valid JSON; stable schema committed to `docs/metadata-schema.md`.
+    - When multiple tracks are produced, each appears with accurate properties.
+    - Command exits non-error even if some non-critical fields are unavailable (fields may be null).
+
+- [ ] Wire CLI → core → ripper → post-processing [#PX-T4]
+  - **Description:** Ensure the title flag flows end-to-end so naming and metadata generation have access to it; centralize naming util.
+  - **Acceptance Criteria:**
+    - Single source-of-truth function for slug + path building.
+    - No duplicate logic across modules (unit covered).
+
+- [ ] Config & defaults audit [#PX-T5]
+  - **Description:** Add/confirm config keys in `{CONFIG_PATH}` that influence output root, metadata placement, and naming pattern overrides.
+  - **Acceptance Criteria:**
+    - Default behavior matches above when no overrides present.
+    - Overrides documented in `project_spec.md` (if present) or `README.md`.
+
+- [ ] Tests for CLI, naming, and metadata JSON [#PX-T6]
+  - **Description:** Add unit tests for slug rules, filename rendering, and JSON writer; add at least one integration-style test that mocks a rip result.
+  - **Acceptance Criteria:**
+    - Tests run locally and in CI; cover error handling (no title, invalid title, missing metadata fields).
+    - Snapshot or schema validation for `metadata.json`.
+
+- [ ] Docs & help text updates [#PX-T7]
+  - **Description:** Update `README.md` / usage docs to show examples with `--title`; add `docs/metadata-schema.md` describing JSON structure with example.
+  - **Acceptance Criteria:**
+    - `README.md` includes: quickstart, `--title` example, sample output tree, and sample `metadata.json` snippet.
+    - CLI `--help` text is accurate and concise.
+
+- [ ] Changelog entry [#PX-T8]
+  - **Description:** Add an entry to `CHANGELOG.md` describing the new title flag, naming scheme, and metadata export.
+  - **Acceptance Criteria:**
+    - Version bump + concise notes, linked to task IDs `#PX-T1..T8`.
+
+### Cross-cutting Notes
+
+- **Non-breaking defaults:** If `--title` is absent, continue to rip and choose the best-available fallback (disc label, etc.).
+- **Determinism:** Naming and metadata layout must be deterministic for the same inputs/config.
+- **Observability:** Log which title and output paths are used; log the metadata file path upon success.
