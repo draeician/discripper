@@ -55,6 +55,31 @@ After installation the `discripper` entry point is available on your `PATH`.
 
 Configuration defaults to `~/.config/discripper.yaml`, and CLI flags can override key settings. See `PRD.md` for the broader feature roadmap.
 
+## Quickstart
+
+Get a feel for the CLI without any hardware by combining the bundled simulation
+fixtures with the new title-aware naming flow:
+
+```bash
+# 1. Ensure the development install is available
+pip install -e .
+
+# 2. Review the available flags (including --title)
+discripper --help
+
+# 3. Run a dry-run simulation with a custom title override
+discripper --simulate single_movie_disc --dry-run -t "The Matrix"
+```
+
+The simulation honours whichever ripping tools are present on your `PATH`; if
+the prerequisites are missing, install them from the section above or lean on
+the demo script to stub them out.
+
+If you prefer a guided tour, run `bash scripts/demo.sh`. The script stubs
+`ffmpeg` when it is missing and showcases both the movie and series fixtures.
+The fixture name `single_movie_disc` resolves to the JSON file stored under
+`tests/fixtures/single_movie_disc.json`.
+
 ## Configuration
 
 `discripper` loads its settings from a YAML file. By default the loader targets
@@ -177,7 +202,7 @@ Inspect the built-in help to review all supported flags and arguments:
 
 ```console
 $ discripper --help
-usage: discripper [-h] [--config CONFIG_PATH] [--verbose] [--dry-run] [device]
+usage: discripper [-h] [--config CONFIG_PATH] [--verbose] [--dry-run] [-t TITLE] [--log-file LOG_FILE] [device]
 
 discripper command-line interface
 
@@ -189,6 +214,9 @@ options:
   --config CONFIG_PATH  Path to the configuration file to use.
   --verbose             Enable verbose (DEBUG) logging output.
   --dry-run             Perform a dry run without executing side effects.
+  -t TITLE, --title TITLE
+                        Override the detected disc title used for planning and naming.
+  --log-file LOG_FILE   Path to a file where logs should also be written.
 ```
 
 ### Movie workflow
@@ -196,7 +224,7 @@ options:
 Insert the disc and run:
 
 ```bash
-discripper /dev/sr0
+discripper /dev/sr0 -t "The Matrix"
 ```
 
 `discripper` discovers the primary title, logs a `TYPE=movie` classification event, and rips the main feature to `<output_directory>/<movieTitle>.mp4`.
@@ -206,7 +234,7 @@ discripper /dev/sr0
 When the disc contains episodic content, the CLI automatically infers episode ordering and creates per-episode files. For example:
 
 ```bash
-discripper /dev/sr0 --config ~/.config/discripper.yaml
+discripper /dev/sr0 --config ~/.config/discripper.yaml --title "Limited Series"
 ```
 
 The command emits structured logs such as `EVENT=CLASSIFIED TYPE=series EPISODES=6` and writes files following the pattern `<seriesName>/<seriesName>-s01eNN_<title>.mp4` inside the configured output directory.
@@ -235,6 +263,7 @@ disc-title slug with numbered tracks:
 
 ```
 ~/Videos/simulation-feature-film/
+├── metadata.json
 └── simulation-feature-film_track01.mp4
 ```
 
@@ -243,6 +272,7 @@ comes from the provided or detected disc title:
 
 ```
 ~/Videos/simulation-limited-series/
+├── metadata.json
 ├── simulation-limited-series_track01.mp4
 ├── simulation-limited-series_track02.mp4
 ├── simulation-limited-series_track03.mp4
@@ -250,6 +280,30 @@ comes from the provided or detected disc title:
 ```
 
 These examples come directly from the `samples/simulated_*.json` fixtures and are asserted by `tests/test_samples_naming.py`, keeping the documentation in lockstep with the implementation.
+
+### Sample metadata
+
+Every rip writes a `metadata.json` document alongside the generated tracks.
+Each file captures the resolved title, classification outcome, and track
+details. A trimmed example looks like this:
+
+```json
+{
+  "title": "The Matrix",
+  "output_root": "/home/user/Videos/the-matrix",
+  "classification": {"type": "movie", "episode_count": 1},
+  "tracks": [
+    {
+      "index": 1,
+      "output": {"path": "/home/user/Videos/the-matrix/the-matrix_track01.mp4"},
+      "format": {"container": "mov,mp4,m4a,3gp,3g2,mj2", "duration_seconds": 5400.5}
+    }
+  ]
+}
+```
+
+See [`docs/metadata-schema.md`](docs/metadata-schema.md) for the full schema and
+a comprehensive JSON example.
 
 ## Exit codes
 

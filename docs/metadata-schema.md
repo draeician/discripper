@@ -3,7 +3,8 @@
 The ripping pipeline writes a `metadata.json` document alongside ripped files in the
 slugged output directory (for example: `~/Videos/the-matrix/metadata.json`). The
 document captures disc-level details, the selected classification, the resolved
-title, tool versions, and a per-track breakdown of the media that was produced.
+title (either passed via `--title` or inferred), tool versions, and a per-track
+breakdown of the media that was produced.
 
 ## Top-level structure
 
