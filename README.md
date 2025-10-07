@@ -6,6 +6,10 @@
 
 This repository is under active development. Core functionality such as configuration loading, device inspection, and ripping orchestration is tracked in `PRD.md` and `TASKS.md`.
 
+## Operating Mode
+
+This project currently runs in a self-contained Codex training sandbox. See [`.codex/instructions/LOCAL_MODE.md`](.codex/instructions/LOCAL_MODE.md) for isolation rules and workflow expectations.
+
 ## Prerequisites
 
 `discripper` orchestrates several command-line tools that are typically available from Debian and Ubuntu package repositories. Install them before running the CLI:
