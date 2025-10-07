@@ -75,19 +75,25 @@ def _destination_factory(
     disc: DiscInfo,
     classification: ClassificationResult,
     config: Mapping[str, Any],
-) -> Callable[[TitleInfo, str | None], Path]:
+) -> Callable[[TitleInfo, str | None, int], Path]:
     """Return a destination factory compatible with :func:`rip_disc`."""
 
-    def factory(title: TitleInfo, episode_code: str | None) -> Path:
+    def factory(title: TitleInfo, episode_code: str | None, track_index: int) -> Path:
         if classification.disc_type == "movie":
-            return movie_output_path(title, config)
+            return movie_output_path(title, config, track_index=track_index)
 
         if not episode_code:
             raise RuntimeError(
                 "Series classification requires episode codes for destination planning"
             )
 
-        return series_output_path(disc.label, title, episode_code, config)
+        return series_output_path(
+            disc.label,
+            title,
+            episode_code,
+            config,
+            track_index=track_index,
+        )
 
     return factory
 

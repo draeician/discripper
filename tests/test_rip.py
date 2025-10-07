@@ -142,9 +142,10 @@ def test_rip_disc_movie_invokes_destination_factory(
     classification = ClassificationResult("movie", (sample_title,))
     destinations: list[Path] = []
 
-    def destination_factory(title: TitleInfo, code: str | None) -> Path:
+    def destination_factory(title: TitleInfo, code: str | None, index: int) -> Path:
         assert code is None
         assert title is sample_title
+        assert index == 1
         path = tmp_path / f"{title.label}.mp4"
         destinations.append(path)
         return path
@@ -168,9 +169,9 @@ def test_rip_disc_series_uses_episode_codes(tmp_path: Path) -> None:
         "series", (title_one, title_two), ("s01e01", "s01e02")
     )
 
-    def destination_factory(title: TitleInfo, code: str | None) -> Path:
+    def destination_factory(title: TitleInfo, code: str | None, index: int) -> Path:
         assert code is not None
-        return tmp_path / f"{code}_{title.label}.mp4"
+        return tmp_path / f"{index:02d}_{code}_{title.label}.mp4"
 
     plans = rip_disc(
         "/dev/sr0",
@@ -182,8 +183,8 @@ def test_rip_disc_series_uses_episode_codes(tmp_path: Path) -> None:
 
     assert len(plans) == 2
     assert [plan.destination.name for plan in plans] == [
-        "s01e01_Pilot.mp4",
-        "s01e02_Episode Two.mp4",
+        "01_s01e01_Pilot.mp4",
+        "02_s01e02_Episode Two.mp4",
     ]
     assert all(plan.will_execute is False for plan in plans)
 

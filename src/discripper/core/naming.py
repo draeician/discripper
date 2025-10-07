@@ -18,6 +18,7 @@ if TYPE_CHECKING:  # pragma: no cover - used for type checking only
 _SAFE_CHARS = set(string.ascii_letters + string.digits)
 _FALLBACK_NAME = "untitled"
 _FALLBACK_SEPARATOR = "_"
+_SLUG_SEPARATOR = "-"
 _EPISODE_CODE_PATTERN = re.compile(r"s(?P<season>\d+)e(?P<episode>\d+)", re.IGNORECASE)
 
 EpisodeTitleStrategy = Callable[["TitleInfo", str | None], str]
@@ -228,21 +229,79 @@ def _ensure_unique_path(path: Path) -> Path:
         counter += 1
 
 
+def _slugify_title(value: str) -> str:
+    """Return a deterministic slug for *value* using ASCII-safe characters.
+
+    The slug implementation follows the specification introduced for the
+    title-aware ripping flow: characters are normalized to ASCII, whitespace is
+    collapsed to hyphens, output is lowercased, and only alphanumeric
+    characters, hyphens, and underscores are preserved. Runs of separators are
+    collapsed into a single hyphen. When the resulting slug would be empty, a
+    stable fallback string is returned.
+    """
+
+    normalized = unicodedata.normalize("NFKD", value)
+    ascii_only = normalized.encode("ascii", "ignore").decode("ascii")
+
+    pieces: list[str] = []
+    previous_was_separator = False
+    for char in ascii_only:
+        if char.isalnum():
+            pieces.append(char.lower())
+            previous_was_separator = False
+            continue
+
+        if char in "-_":
+            candidate = char
+        elif char.isspace():
+            candidate = _SLUG_SEPARATOR
+        else:
+            candidate = _SLUG_SEPARATOR
+
+        if not previous_was_separator:
+            pieces.append(candidate)
+            previous_was_separator = True
+
+    slug = "".join(pieces).strip("-_")
+    return slug or _FALLBACK_NAME
+
+
+def _disc_slug_from_config(config: Mapping[str, object], fallback: str) -> str:
+    configured = config.get("title")
+    if isinstance(configured, str):
+        normalized = configured.strip()
+        if normalized:
+            return _slugify_title(normalized)
+
+    return _slugify_title(fallback)
+
+
+def _build_slugged_path(
+    slug: str,
+    *,
+    track_index: int,
+    config: Mapping[str, object],
+    extension: str = ".mp4",
+) -> Path:
+    directory = _output_directory_from_config(config) / slug
+    filename = f"{slug}_track{track_index:02d}{extension}"
+    return _ensure_unique_path(directory / filename)
+
+
 def movie_output_path(
     title: "TitleInfo",
     config: Mapping[str, object],
+    *,
+    track_index: int = 1,
 ) -> Path:
-    """Return the destination path for a movie title based on *config*."""
+    """Return the destination path for a movie title based on *config*.
 
-    separator, lowercase = _extract_naming_preferences(config)
-    sanitized_title = sanitize_component(
-        title.label,
-        separator=separator,
-        lowercase=lowercase,
-    )
+    The path now incorporates the disc title slug so that ``--title`` or the
+    auto-detected fallback drives both the directory and filename.
+    """
 
-    initial = _output_directory_from_config(config) / f"{sanitized_title}.mp4"
-    return _ensure_unique_path(initial)
+    slug = _disc_slug_from_config(config, title.label)
+    return _build_slugged_path(slug, track_index=track_index, config=config)
 
 
 def series_output_path(
@@ -250,26 +309,16 @@ def series_output_path(
     title: "TitleInfo",
     episode_code: str,
     config: Mapping[str, object],
+    *,
+    track_index: int = 1,
 ) -> Path:
-    """Return the destination path for a series episode."""
+    """Return the destination path for a series episode.
 
-    separator, lowercase = _extract_naming_preferences(config)
-    sanitized_series = sanitize_component(
-        series_label,
-        separator=separator,
-        lowercase=lowercase,
-    )
-    resolved_episode_title = _episode_title_from_strategy(
-        title,
-        episode_code,
-        config,
-    )
-    sanitized_episode = sanitize_component(
-        resolved_episode_title,
-        separator=separator,
-        lowercase=lowercase,
-    )
+    Series outputs share the same slug-driven directory and filename pattern as
+    movies so downstream processing can rely on deterministic naming. Episode
+    metadata continues to be inferred for other behaviours (e.g., metadata
+    writers) even though it is no longer embedded in the filename itself.
+    """
 
-    directory = _output_directory_from_config(config) / sanitized_series
-    filename = f"{sanitized_series}-{episode_code}_{sanitized_episode}.mp4"
-    return _ensure_unique_path(directory / filename)
+    slug = _disc_slug_from_config(config, series_label)
+    return _build_slugged_path(slug, track_index=track_index, config=config)

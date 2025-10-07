@@ -22,8 +22,11 @@ def test_simulated_movie_output_matches_prd_pattern(tmp_path: Path) -> None:
 
     assert classification.disc_type == "movie"
 
+    config["title"] = disc.label
+
     movie_plan = movie_output_path(classification.episodes[0], config)
-    assert movie_plan == output_dir / "Main_Feature.mp4"
+    expected = output_dir / "simulation-feature-film" / "simulation-feature-film_track01.mp4"
+    assert movie_plan == expected
 
 
 def test_simulated_series_output_matches_prd_pattern(tmp_path: Path) -> None:
@@ -37,15 +40,26 @@ def test_simulated_series_output_matches_prd_pattern(tmp_path: Path) -> None:
     assert classification.disc_type == "series"
     assert classification.episode_codes is not None
 
+    config["title"] = disc.label
+
     destinations = [
-        series_output_path(disc.label, title, code, config)
-        for title, code in zip(classification.episodes, classification.episode_codes)
+        series_output_path(
+            disc.label,
+            title,
+            code,
+            config,
+            track_index=index,
+        )
+        for index, (title, code) in enumerate(
+            zip(classification.episodes, classification.episode_codes),
+            start=1,
+        )
     ]
 
-    expected_dir = output_dir / "Simulation_Limited_Series"
+    expected_dir = output_dir / "simulation-limited-series"
     assert destinations == [
-        expected_dir / "Simulation_Limited_Series-s01e01_Episode_3.mp4",
-        expected_dir / "Simulation_Limited_Series-s01e02_Episode_1.mp4",
-        expected_dir / "Simulation_Limited_Series-s01e03_Episode_2.mp4",
-        expected_dir / "Simulation_Limited_Series-s01e04_Episode_4.mp4",
+        expected_dir / "simulation-limited-series_track01.mp4",
+        expected_dir / "simulation-limited-series_track02.mp4",
+        expected_dir / "simulation-limited-series_track03.mp4",
+        expected_dir / "simulation-limited-series_track04.mp4",
     ]
